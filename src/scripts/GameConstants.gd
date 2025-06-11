@@ -23,8 +23,6 @@ const UI_AREA_RECT: Rect2 = Rect2(0, PLAY_AREA_HEIGHT, SCREEN_WIDTH, UI_AREA_HEI
 # =============================================================================
 # 基本設定
 const PLAYER_SPRITE_SCALE: float = 3.0
-const PLAYER_MOVE_DISTANCE: float = 50.0
-const PLAYER_SIZE: Vector2 = Vector2(64, 64)
 
 # アニメーション設定
 const PLAYER_WALK_SPRITES: Array[String] = [
@@ -37,6 +35,15 @@ const PLAYER_SPRITE_FLIP_H: bool = true  # 左右反転
 # アイドルアニメーション設定（現在は未使用）
 const PLAYER_IDLE_BOB_SPEED: float = 2.0
 const PLAYER_IDLE_BOB_HEIGHT: float = 10.0
+
+# 武器設定
+const PLAYER_WEAPON_SPRITE: String = "res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0103.png"
+const PLAYER_WEAPON_SCALE: float = 2.0
+const PLAYER_WEAPON_OFFSET: Vector2 = Vector2(30, -10)  # プレイヤーからの相対位置
+
+# 攻撃設定
+const PLAYER_ATTACK_DURATION: float = 0.5  # 攻撃アニメーション時間（秒）
+const PLAYER_ATTACK_ROTATION_ANGLE: float = 90.0  # 剣を振る角度（度）
 
 # =============================================================================
 # 地面・スクロール設定
@@ -64,16 +71,41 @@ const BACKGROUND_TILE_PATHS: Array[String] = [
 ]
 
 # =============================================================================
+# 移動距離・進行設定
+# =============================================================================
+# 移動速度設定
+const PLAYER_TRAVEL_SPEED: float = 2.0  # メートル/秒
+
+# =============================================================================
+# エネミー設定
+# =============================================================================
+# 基本設定
+const ENEMY_SPRITE_SCALE: float = 3.0
+const ENEMY_WALK_SPEED: float = 100.0  # ピクセル/秒
+
+# アニメーション設定
+const ENEMY_WALK_SPRITES: Array[String] = [
+	"res://assets/sprites/kenney_pixel-platformer/Tiles/Characters/tile_0018.png",
+	"res://assets/sprites/kenney_pixel-platformer/Tiles/Characters/tile_0019.png"
+]
+const ENEMY_ANIMATION_SPEED: float = 4.0  # フレーム/秒
+const ENEMY_SPRITE_FLIP_H: bool = false  # 左右反転（左向きに歩く）
+
+# 出現設定
+const ENEMY_SPAWN_DISTANCE: float = 1.0  # 1m地点で出現
+const ENEMY_SPAWN_X: float = SCREEN_WIDTH + 50.0  # 画面右端外側
+const ENEMY_TARGET_X: float = -100.0  # 画面左端外側まで歩く
+
+# 戦闘設定
+const ENEMY_ENCOUNTER_DISTANCE: float = 50.0  # 接近判定距離（ピクセル）
+
+# =============================================================================
 # テスト・デバッグ設定
 # =============================================================================
 # テスト用定数
 const TEST_MOVE_DISTANCE: float = 100.0
 const TEST_ANIMATION_WAIT_TIME: float = 0.1
 const TEST_ANIMATION_THRESHOLD: float = 0.1
-
-# UI設定
-const TEST_BUTTON_WIDTH: float = 180.0
-const TEST_BUTTON_MARGIN: float = 20.0
 
 # 入力設定
 const TEST_KEY: Key = KEY_F12

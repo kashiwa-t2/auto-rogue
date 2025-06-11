@@ -30,12 +30,17 @@ func _setup_background_tiles() -> void:
 	if not first_texture:
 		return
 	
-	var scale_factor = GameConstants.PLAY_AREA_HEIGHT / first_texture.get_height()
+	# 背景の高さを地面より上の領域に調整
+	var available_height = GameConstants.PLAY_AREA_HEIGHT - GameConstants.GROUND_HEIGHT
+	var scale_factor = available_height / first_texture.get_height()
 	var scaled_width = first_texture.get_width() * scale_factor
 	tile_width = scaled_width
 	
+	# 背景のY位置を地面の上に配置
+	var background_y = available_height / 2.0
+	
 	var tiles_needed = _calculate_tiles_needed(scaled_width)
-	_log_debug("Creating %d background tiles with scale: %f" % [tiles_needed, scale_factor])
+	_log_debug("Creating %d background tiles with scale: %f, height: %f" % [tiles_needed, scale_factor, available_height])
 	
 	for i in range(tiles_needed):
 		var texture_index = i % tile_paths.size()
@@ -46,7 +51,7 @@ func _setup_background_tiles() -> void:
 				texture,
 				scale_factor,
 				i * scaled_width,
-				GameConstants.PLAY_AREA_HEIGHT / 2.0
+				background_y
 			)
 			
 			if sprite:

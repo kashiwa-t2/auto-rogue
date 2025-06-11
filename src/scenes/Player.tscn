@@ -10,6 +10,10 @@ script = ExtResource("1_player_script")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 
+[node name="WeaponSprite" type="Sprite2D" parent="."]
+position = Vector2(30, -10)
+scale = Vector2(2, 2)
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_player")
 

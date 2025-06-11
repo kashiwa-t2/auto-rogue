@@ -6,14 +6,28 @@ extends Control
 @onready var player: Player = $PlayArea/Player
 @onready var background_scroller: BackgroundScroller = $PlayArea/BackgroundScroller
 @onready var ground_scroller: GroundScroller = $PlayArea/GroundScroller
+@onready var distance_label: Label = $PlayArea/DistanceLabel
 
 var scroll_manager: ScrollManager
+var traveled_distance: float = 0.0
+var enemy_spawned: bool = false
+var is_in_battle: bool = false
+var current_enemy: EnemyBase = null
+
+# エネミーシーンの参照
+const BasicEnemyScene = preload("res://src/scenes/BasicEnemy.tscn")
 
 func _ready():
 	_log_debug("MainScene loaded - Auto Rogue Game Started!")
 	_setup_scroll_manager()
 	_setup_player_signals()
 	_setup_scroll_signals()
+	_setup_distance_tracking()
+
+func _process(delta):
+	if not is_in_battle:
+		_update_traveled_distance(delta)
+	_check_player_enemy_proximity()
 
 func _input(event):
 	if event is InputEventKey and event.pressed:
@@ -43,6 +57,8 @@ func _setup_player_signals() -> void:
 	
 	player.position_changed.connect(_on_player_position_changed)
 	player.player_reset.connect(_on_player_reset)
+	player.attack_started.connect(_on_player_attack_started)
+	player.attack_finished.connect(_on_player_attack_finished)
 	_log_debug("Player signals connected")
 
 ## スクロールシグナルの設定
@@ -52,6 +68,135 @@ func _setup_scroll_signals() -> void:
 	if ground_scroller:
 		ground_scroller.ground_looped.connect(_on_ground_looped)
 	_log_debug("Scroll signals connected")
+
+## 距離トラッキングの設定
+func _setup_distance_tracking() -> void:
+	traveled_distance = 0.0
+	_update_distance_display()
+	_log_debug("Distance tracking initialized")
+
+## 移動距離の更新
+func _update_traveled_distance(delta: float) -> void:
+	traveled_distance += GameConstants.PLAYER_TRAVEL_SPEED * delta
+	_update_distance_display()
+	_check_enemy_spawn()
+
+## 距離表示の更新
+func _update_distance_display() -> void:
+	if distance_label:
+		distance_label.text = "%d m" % int(traveled_distance)
+
+## 敵の出現チェック
+func _check_enemy_spawn() -> void:
+	if not enemy_spawned and traveled_distance >= GameConstants.ENEMY_SPAWN_DISTANCE:
+		_spawn_enemy()
+		enemy_spawned = true
+
+## 敵をスポーンさせる
+func _spawn_enemy() -> void:
+	# 現在は基本敵のみスポーン（将来的に種類を選択可能に）
+	var enemy_instance = BasicEnemyScene.instantiate()
+	if enemy_instance:
+		# 画面右端外側から出現、地面上に配置
+		var spawn_position = Vector2(
+			GameConstants.ENEMY_SPAWN_X,
+			GameConstants.GROUND_Y_POSITION - GameConstants.GROUND_HEIGHT / 2.0 - 21.0  # プレイヤーと同じ高さ
+		)
+		enemy_instance.position = spawn_position
+		
+		# シグナル接続
+		enemy_instance.enemy_reached_target.connect(_on_enemy_reached_target)
+		enemy_instance.enemy_destroyed.connect(_on_enemy_destroyed)
+		enemy_instance.enemy_battle_state_changed.connect(_on_enemy_battle_state_changed)
+		
+		# PlayAreaに追加
+		$PlayArea.add_child(enemy_instance)
+		current_enemy = enemy_instance
+		_log_debug("BasicEnemy spawned at distance: %d m" % int(traveled_distance))
+
+## プレイヤーと敵の接近判定
+func _check_player_enemy_proximity() -> void:
+	if current_enemy and is_instance_valid(current_enemy) and player:
+		var distance = player.position.distance_to(current_enemy.position)
+		
+		if not is_in_battle and distance <= GameConstants.ENEMY_ENCOUNTER_DISTANCE:
+			_start_battle()
+		elif is_in_battle and distance > GameConstants.ENEMY_ENCOUNTER_DISTANCE:
+			_end_battle()
+
+## 戦闘開始
+func _start_battle() -> void:
+	is_in_battle = true
+	_pause_game_progression()
+	_start_player_attack()
+	
+	# 敵に戦闘状態を通知
+	if current_enemy:
+		current_enemy.set_battle_state(true)
+	
+	_log_debug("Battle started! Distance: %d m" % int(traveled_distance))
+
+## 戦闘終了
+func _end_battle() -> void:
+	is_in_battle = false
+	_resume_game_progression()
+	
+	# 敵に戦闘終了を通知
+	if current_enemy:
+		current_enemy.set_battle_state(false)
+	
+	_log_debug("Battle ended!")
+
+## ゲーム進行の停止
+func _pause_game_progression() -> void:
+	if scroll_manager:
+		scroll_manager.pause_all_scrollers()
+	if current_enemy:
+		current_enemy.is_walking = false
+	_log_debug("Game progression paused")
+
+## ゲーム進行の再開
+func _resume_game_progression() -> void:
+	if scroll_manager:
+		scroll_manager.resume_all_scrollers()
+	if current_enemy:
+		current_enemy.is_walking = true
+	_log_debug("Game progression resumed")
+
+## 敵の戦闘状態変更イベントハンドラー
+func _on_enemy_battle_state_changed(in_battle: bool) -> void:
+	_log_debug("Enemy battle state changed: %s" % in_battle)
+
+## プレイヤーの攻撃開始
+func _start_player_attack() -> void:
+	if player and not player.is_player_attacking():
+		player.start_attack()
+
+## プレイヤー攻撃イベントハンドラー
+func _on_player_attack_started() -> void:
+	_log_debug("Player attack started")
+
+func _on_player_attack_finished() -> void:
+	_log_debug("Player attack finished")
+	# 戦闘中なら次の攻撃を開始
+	if is_in_battle:
+		# 少し間を空けてから次の攻撃
+		await get_tree().create_timer(0.3).timeout
+		if is_in_battle:  # まだ戦闘中かチェック
+			_start_player_attack()
+
+## 敵イベントハンドラー
+func _on_enemy_reached_target() -> void:
+	current_enemy = null
+	is_in_battle = false
+	_resume_game_progression()
+	_log_debug("Enemy reached target and was removed")
+
+func _on_enemy_destroyed() -> void:
+	current_enemy = null
+	is_in_battle = false
+	_resume_game_progression()
+	_log_debug("Enemy was destroyed")
 
 ## イベントハンドラー
 func _on_player_position_changed(new_position: Vector2) -> void:
@@ -69,27 +214,6 @@ func _on_ground_looped() -> void:
 func _on_scroll_speed_changed(new_speed: float) -> void:
 	_log_debug("Scroll speed changed to: %f" % new_speed)
 
-## UIボタンハンドラー
-func _on_move_right_button_pressed():
-	if _validate_player():
-		player.move_right()
-
-func _on_move_left_button_pressed():
-	if _validate_player():
-		player.move_left()
-
-func _on_reset_position_button_pressed():
-	if _validate_player():
-		player.reset_to_center()
-
-func _on_scroll_speed_button_pressed():
-	if not scroll_manager:
-		_log_error("ScrollManager not available")
-		return
-	
-	var new_speed = scroll_manager.cycle_scroll_speed()
-	var status = "paused" if new_speed == 0.0 else ("%.0f px/s" % new_speed)
-	_log_debug("Scroll speed cycled to: %s" % status)
 
 ## テスト実行
 func _run_player_tests():

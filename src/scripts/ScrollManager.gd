@@ -5,8 +5,6 @@ class_name ScrollManager
 ## 複数のスクローラーを一元的に制御
 
 var scrollers: Array[ScrollerBase] = []
-var scroll_speed_modes: Array[float] = [50.0, 100.0, 200.0, 0.0]
-var current_speed_index: int = 1
 
 signal scroll_speed_changed(new_speed: float)
 signal scroller_added(scroller: ScrollerBase)
@@ -70,20 +68,6 @@ func reset_all_scrollers() -> void:
 			scroller.reset_scroll()
 	_log_debug("Reset all scrollers")
 
-## 速度モードの循環切り替え
-func cycle_scroll_speed() -> float:
-	current_speed_index = (current_speed_index + 1) % scroll_speed_modes.size()
-	var new_speed = scroll_speed_modes[current_speed_index]
-	
-	if new_speed == 0.0:
-		pause_all_scrollers()
-		_log_debug("Cycled to pause mode")
-	else:
-		set_all_scroll_speed(new_speed)
-		resume_all_scrollers()
-		_log_debug("Cycled to speed: %f" % new_speed)
-	
-	return new_speed
 
 ## 特定のスクローラーを名前で検索
 func get_scroller_by_name(scroller_name: String) -> ScrollerBase:
@@ -92,9 +76,6 @@ func get_scroller_by_name(scroller_name: String) -> ScrollerBase:
 			return scroller
 	return null
 
-## 現在の速度を取得
-func get_current_speed() -> float:
-	return scroll_speed_modes[current_speed_index]
 
 ## 登録されているスクローラー数を取得
 func get_scroller_count() -> int:

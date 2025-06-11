@@ -50,32 +50,28 @@ static func test_player_idle_animation(player: Player) -> bool:
 		_log_test_warning("Idle animation: Position not changing (may be normal)")
 		return true
 
-## API機能テスト
-static func test_player_api(player: Player) -> bool:
-	if not _validate_player(player, "API Test"):
+## 位置機能テスト
+static func test_player_position(player: Player) -> bool:
+	if not _validate_player(player, "Position Test"):
 		return false
 	
-	_log_test_start("Player API")
+	_log_test_start("Player Position")
 	
 	var initial_pos = player.get_current_position()
 	
-	# move_right APIテスト
-	player.move_right()
-	var after_right = player.get_current_position()
-	if after_right.x != initial_pos.x + GameConstants.PLAYER_MOVE_DISTANCE:
-		_log_test_failure("move_right API failed")
+	# move_to_position APIテスト
+	var test_pos = Vector2(initial_pos.x + 50, initial_pos.y)
+	player.move_to_position(test_pos)
+	var moved_pos = player.get_current_position()
+	if moved_pos != test_pos:
+		_log_test_failure("move_to_position API failed")
 		return false
-	_log_test_success("move_right API: OK")
+	_log_test_success("move_to_position API: OK")
 	
-	# move_left APIテスト
-	player.move_left()
-	var after_left = player.get_current_position()
-	if after_left.x != initial_pos.x:
-		_log_test_failure("move_left API failed")
-		return false
-	_log_test_success("move_left API: OK")
+	# 元の位置に戻す
+	player.move_to_position(initial_pos)
 	
-	_log_test_success("All Player API Tests Passed!")
+	_log_test_success("All Player Position Tests Passed!")
 	return true
 
 ## 歩行アニメーションテスト
@@ -200,7 +196,7 @@ static func run_all_tests(player: Player, main_scene = null) -> void:
 	# プレイヤー関連テスト
 	results.append(test_player_movement(player))
 	results.append(await test_player_idle_animation(player))
-	results.append(test_player_api(player))
+	results.append(test_player_position(player))
 	results.append(test_player_walk_animation(player))
 	
 	# システム関連テスト
@@ -238,11 +234,12 @@ static func _test_left_movement(player: Player, initial_pos: Vector2) -> bool:
 	return true
 
 static func _test_reset_movement(player: Player) -> bool:
-	player.reset_to_center()
+	# リセット機能は削除されたため、初期位置への移動テストに変更
+	player.move_to_position(GameConstants.PLAYER_DEFAULT_POSITION)
 	if player.get_current_position() != GameConstants.PLAYER_DEFAULT_POSITION:
-		_log_test_failure("Reset to center failed")
+		_log_test_failure("Move to default position failed")
 		return false
-	_log_test_success("Reset to center: OK")
+	_log_test_success("Move to default position: OK")
 	return true
 
 static func _validate_player(player: Player, test_name: String) -> bool:
