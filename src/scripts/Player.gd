@@ -10,6 +10,7 @@ class_name Player
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var weapon_sprite: Sprite2D = $WeaponSprite
 @onready var walk_timer: Timer = $WalkAnimationTimer
+@onready var hp_bar = $HPBar
 
 var initial_position: Vector2
 var time_passed: float = 0.0
@@ -24,15 +25,22 @@ var current_frame: int = 0
 var weapon_initial_rotation: float = 0.0
 var attack_tween: Tween
 
+# HP関連
+var max_hp: int = GameConstants.PLAYER_MAX_HP
+var current_hp: int = GameConstants.PLAYER_DEFAULT_HP
+
 signal position_changed(new_position: Vector2)
 signal player_reset()
 signal attack_started()
 signal attack_finished()
+signal hp_changed(new_hp: int, max_hp: int)
+signal player_died()
 
 func _ready():
 	initial_position = position
 	_setup_walk_animation()
 	_setup_weapon()
+	_setup_hp_system()
 	_log_debug("Player initialized at position: %s" % position)
 
 func _physics_process(delta):
@@ -94,6 +102,57 @@ func _setup_weapon() -> void:
 	else:
 		_log_error("Weapon sprite node not found")
 
+## HPシステムの初期設定
+func _setup_hp_system() -> void:
+	"""HPシステムとHPバーの初期化"""
+	if hp_bar:
+		hp_bar.position = GameConstants.HP_BAR_OFFSET
+		hp_bar.initialize_hp(current_hp, max_hp)
+		hp_bar.hp_changed.connect(_on_hp_changed)
+		hp_bar.hp_depleted.connect(_on_hp_depleted)
+		_log_debug("HP system initialized: %d/%d" % [current_hp, max_hp])
+	else:
+		_log_error("HP bar node not found")
+
+## ダメージを受ける
+func take_damage(damage: int) -> void:
+	"""プレイヤーがダメージを受ける"""
+	if hp_bar:
+		hp_bar.take_damage(damage)
+		current_hp = hp_bar.get_current_hp()
+		_log_debug("Player took %d damage, HP: %d/%d" % [damage, current_hp, max_hp])
+
+## HPを回復
+func heal(amount: int) -> void:
+	"""プレイヤーのHPを回復"""
+	if hp_bar:
+		hp_bar.heal(amount)
+		current_hp = hp_bar.get_current_hp()
+		_log_debug("Player healed %d HP, HP: %d/%d" % [amount, current_hp, max_hp])
+
+## HP変更イベントハンドラー
+func _on_hp_changed(new_hp: int, maximum_hp: int) -> void:
+	"""HPが変更された時の処理"""
+	current_hp = new_hp
+	hp_changed.emit(new_hp, maximum_hp)
+
+## HP枯渇イベントハンドラー
+func _on_hp_depleted() -> void:
+	"""HPが0になった時の処理"""
+	_log_debug("Player died!")
+	player_died.emit()
+
+## 現在のHP取得
+func get_current_hp() -> int:
+	return current_hp
+
+## 最大HP取得
+func get_max_hp() -> int:
+	return max_hp
+
+## 生存確認
+func is_alive() -> bool:
+	return current_hp > 0
 
 func _update_idle_animation(delta: float) -> void:
 	"""アイドルアニメーションの更新（位置の浮遊）"""

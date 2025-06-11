@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://c3fxp4k5n6m7o"]
+[gd_scene load_steps=4 format=3 uid="uid://c3fxp4k5n6m7o"]
 
 [ext_resource type="Script" uid="uid://dvnfadeumqfse" path="res://src/scripts/Player.gd" id="1_player_script"]
+[ext_resource type="Script" path="res://src/scripts/HPBar.gd" id="2_hpbar_script"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(32, 32)
@@ -20,5 +21,10 @@ shape = SubResource("RectangleShape2D_player")
 [node name="WalkAnimationTimer" type="Timer" parent="."]
 wait_time = 0.25
 autostart = true
+
+[node name="HPBar" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("2_hpbar_script")
 
 [connection signal="timeout" from="WalkAnimationTimer" to="." method="_on_walk_animation_timer_timeout"]

@@ -14,6 +14,7 @@ enum EnemyType {
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var walk_timer: Timer = $WalkAnimationTimer
+@onready var hp_bar = $HPBar
 
 # 基本プロパティ
 var enemy_type: EnemyType = EnemyType.BASIC
@@ -28,14 +29,21 @@ var battle_tween: Tween
 var charge_speed: float = 200.0  # 突進速度
 var charge_distance: float = 30.0  # 突進距離
 
+# HP関連
+var max_hp: int = 50
+var current_hp: int = 50
+
 # シグナル
 signal enemy_reached_target()
 signal enemy_destroyed()
 signal enemy_battle_state_changed(in_battle: bool)
+signal enemy_hp_changed(new_hp: int, max_hp: int)
+signal enemy_died()
 
 func _ready():
 	initial_position = position
 	_setup_enemy()
+	_setup_hp_system()
 	_log_debug("EnemyBase initialized at position: %s, type: %s" % [position, EnemyType.keys()[enemy_type]])
 
 func _physics_process(delta):
@@ -106,6 +114,72 @@ func destroy() -> void:
 		battle_tween.kill()
 	enemy_destroyed.emit()
 	queue_free()
+
+## HPシステムの初期設定
+func _setup_hp_system() -> void:
+	"""敵のHPシステムとHPバーの初期化"""
+	# 敵タイプに応じてHPを設定
+	match enemy_type:
+		EnemyType.BASIC:
+			max_hp = GameConstants.ENEMY_BASIC_HP
+		EnemyType.FAST:
+			max_hp = GameConstants.ENEMY_FAST_HP
+		EnemyType.STRONG:
+			max_hp = GameConstants.ENEMY_STRONG_HP
+		EnemyType.BOSS:
+			max_hp = GameConstants.ENEMY_BOSS_HP
+	
+	current_hp = max_hp
+	
+	if hp_bar:
+		hp_bar.position = GameConstants.HP_BAR_OFFSET
+		hp_bar.initialize_hp(current_hp, max_hp)
+		hp_bar.hp_changed.connect(_on_hp_changed)
+		hp_bar.hp_depleted.connect(_on_hp_depleted)
+		_log_debug("Enemy HP system initialized: %d/%d" % [current_hp, max_hp])
+	else:
+		_log_error("HP bar node not found")
+
+## ダメージを受ける
+func take_damage(damage: int) -> void:
+	"""敵がダメージを受ける"""
+	if hp_bar:
+		hp_bar.take_damage(damage)
+		current_hp = hp_bar.get_current_hp()
+		_log_debug("Enemy took %d damage, HP: %d/%d" % [damage, current_hp, max_hp])
+
+## HPを回復
+func heal(amount: int) -> void:
+	"""敵のHPを回復"""
+	if hp_bar:
+		hp_bar.heal(amount)
+		current_hp = hp_bar.get_current_hp()
+		_log_debug("Enemy healed %d HP, HP: %d/%d" % [amount, current_hp, max_hp])
+
+## HP変更イベントハンドラー
+func _on_hp_changed(new_hp: int, maximum_hp: int) -> void:
+	"""HPが変更された時の処理"""
+	current_hp = new_hp
+	enemy_hp_changed.emit(new_hp, maximum_hp)
+
+## HP枯渇イベントハンドラー
+func _on_hp_depleted() -> void:
+	"""HPが0になった時の処理"""
+	_log_debug("Enemy died!")
+	enemy_died.emit()
+	destroy()
+
+## 現在のHP取得
+func get_current_hp() -> int:
+	return current_hp
+
+## 最大HP取得
+func get_max_hp() -> int:
+	return max_hp
+
+## 生存確認
+func is_alive() -> bool:
+	return current_hp > 0
 
 ## テクスチャの安全な読み込み
 func _load_texture_safe(path: String) -> Texture2D:

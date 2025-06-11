@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://basic_enemy_scene"]
+[gd_scene load_steps=4 format=3 uid="uid://basic_enemy_scene"]
 
 [ext_resource type="Script" uid="uid://basic_enemy_script" path="res://src/scripts/BasicEnemy.gd" id="1_basic_enemy_script"]
+[ext_resource type="Script" uid="uid://hp_bar_class" path="res://src/scripts/HPBar.gd" id="2_hpbar_script"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_basic_enemy"]
 size = Vector2(32, 32)
@@ -16,5 +17,10 @@ shape = SubResource("RectangleShape2D_basic_enemy")
 [node name="WalkAnimationTimer" type="Timer" parent="."]
 wait_time = 0.25
 autostart = true
+
+[node name="HPBar" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("2_hpbar_script")
 
 [connection signal="timeout" from="WalkAnimationTimer" to="." method="_on_walk_animation_timer_timeout"]

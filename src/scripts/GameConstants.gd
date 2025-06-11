@@ -115,13 +115,29 @@ const TEST_KEY: Key = KEY_F12
 const DEBUG_LOG_ENABLED: bool = true
 
 # =============================================================================
+# HP・戦闘システム設定
+# =============================================================================
+# プレイヤーHP設定
+const PLAYER_DEFAULT_HP: int = 100
+const PLAYER_MAX_HP: int = 100
+
+# 敵HP設定
+const ENEMY_BASIC_HP: int = 50
+const ENEMY_FAST_HP: int = 30
+const ENEMY_STRONG_HP: int = 80
+const ENEMY_BOSS_HP: int = 200
+
+# HPバー表示設定
+const HP_BAR_WIDTH: float = 40.0
+const HP_BAR_HEIGHT: float = 6.0
+const HP_BAR_OFFSET: Vector2 = Vector2(-20, -35)  # キャラクター上部のオフセット（中央に配置）
+const HP_BAR_BACKGROUND_COLOR: Color = Color(0.3, 0.3, 0.3, 0.8)  # 濃いグレー
+const HP_BAR_HEALTH_COLOR: Color = Color(0.2, 0.8, 0.2, 1.0)  # 緑
+const HP_BAR_DAMAGE_COLOR: Color = Color(0.8, 0.2, 0.2, 1.0)  # 赤
+
+# =============================================================================
 # ゲームプレイ設定（将来の拡張用）
 # =============================================================================
-# 戦闘設定（MVP後の実装用）
-# const PLAYER_DEFAULT_HP: int = 100
-# const PLAYER_DEFAULT_ATTACK: int = 10
-# const ENEMY_SPAWN_INTERVAL: float = 3.0
-
 # 経済設定（MVP後の実装用）
 # const GOLD_DROP_BASE: int = 10
 # const UPGRADE_COST_BASE: int = 100
