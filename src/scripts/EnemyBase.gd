@@ -94,6 +94,10 @@ func _on_reached_target() -> void:
 
 ## 歩行アニメーションフレームの切り替え
 func _on_walk_animation_timer_timeout():
+	# 戦闘中または歩行停止中はアニメーションを更新しない
+	if is_in_battle or not is_walking:
+		return
+		
 	if walk_sprites.size() <= 1:
 		return
 	
@@ -147,6 +151,9 @@ func take_damage(damage: int) -> void:
 		hp_bar.take_damage(damage)
 		current_hp = hp_bar.get_current_hp()
 		_log_debug("Enemy took %d damage, HP: %d/%d" % [damage, current_hp, max_hp])
+	
+	# ダメージテキストを表示
+	_show_damage_text(damage)
 
 ## HPを回復
 func heal(amount: int) -> void:
@@ -180,6 +187,25 @@ func get_max_hp() -> int:
 ## 生存確認
 func is_alive() -> bool:
 	return current_hp > 0
+
+## ダメージテキストの表示
+func _show_damage_text(damage: int) -> void:
+	"""敵の上にダメージ数値をアニメーション付きで表示"""
+	# DamageTextクラスのインスタンスを作成
+	var damage_text = preload("res://src/scripts/DamageText.gd").new()
+	
+	# 表示位置を計算（敵の上部）
+	var text_position = position + GameConstants.DAMAGE_TEXT_OFFSET
+	
+	# 親ノード（PlayArea）に追加
+	var parent = get_parent()
+	if parent:
+		parent.add_child(damage_text)
+		damage_text.initialize_damage_text(damage, text_position)
+		_log_debug("Damage text displayed: %d at position %s" % [damage, text_position])
+	else:
+		_log_error("Cannot display damage text: parent node not found")
+		damage_text.queue_free()
 
 ## テクスチャの安全な読み込み
 func _load_texture_safe(path: String) -> Texture2D:

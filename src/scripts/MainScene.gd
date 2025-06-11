@@ -108,6 +108,7 @@ func _spawn_enemy() -> void:
 		enemy_instance.enemy_reached_target.connect(_on_enemy_reached_target)
 		enemy_instance.enemy_destroyed.connect(_on_enemy_destroyed)
 		enemy_instance.enemy_battle_state_changed.connect(_on_enemy_battle_state_changed)
+		enemy_instance.enemy_died.connect(_on_enemy_died)
 		
 		# PlayAreaに追加
 		$PlayArea.add_child(enemy_instance)
@@ -121,8 +122,8 @@ func _check_player_enemy_proximity() -> void:
 		
 		if not is_in_battle and distance <= GameConstants.ENEMY_ENCOUNTER_DISTANCE:
 			_start_battle()
-		elif is_in_battle and distance > GameConstants.ENEMY_ENCOUNTER_DISTANCE:
-			_end_battle()
+		# 戦闘開始後は距離に関係なく、敵が死ぬまで戦闘継続
+		# 戦闘終了は敵の死亡シグナルでのみ行う
 
 ## 戦闘開始
 func _start_battle() -> void:
@@ -175,6 +176,11 @@ func _start_player_attack() -> void:
 ## プレイヤー攻撃イベントハンドラー
 func _on_player_attack_started() -> void:
 	_log_debug("Player attack started")
+	# 敵にダメージを与える
+	if current_enemy and is_instance_valid(current_enemy) and is_in_battle:
+		var damage = GameConstants.PLAYER_DEFAULT_ATTACK_DAMAGE
+		current_enemy.take_damage(damage)
+		_log_debug("Player dealt %d damage to enemy" % damage)
 
 func _on_player_attack_finished() -> void:
 	_log_debug("Player attack finished")
@@ -197,6 +203,13 @@ func _on_enemy_destroyed() -> void:
 	is_in_battle = false
 	_resume_game_progression()
 	_log_debug("Enemy was destroyed")
+
+## 敵死亡イベントハンドラー
+func _on_enemy_died() -> void:
+	_log_debug("Enemy died! Battle ended.")
+	current_enemy = null
+	is_in_battle = false
+	_resume_game_progression()
 
 ## イベントハンドラー
 func _on_player_position_changed(new_position: Vector2) -> void:

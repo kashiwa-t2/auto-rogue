@@ -47,12 +47,18 @@ func _start_walking() -> void:
 ## 戦闘開始時の動作
 func _start_battle_behavior() -> void:
 	"""戦闘開始時にプレイヤーに向かって突進"""
+	# 歩行アニメーションタイマーを停止
+	if walk_timer:
+		walk_timer.stop()
+		_log_debug("Walk animation timer stopped for battle")
 	_start_charge_animation()
 
 ## 戦闘終了時の動作
 func _end_battle_behavior() -> void:
-	"""戦闘終了時に元の位置に戻る"""
+	"""戦闘終了時に元の位置に戻る（通常は敵の死亡によってのみ呼ばれる）"""
 	_end_charge_animation()
+	# 戦闘後は歩行モードに戻らない（敵は死ぬまで戦闘継続）
+	_log_debug("Battle behavior ended - enemy should be dead")
 
 ## 突進アニメーション開始
 func _start_charge_animation() -> void:
