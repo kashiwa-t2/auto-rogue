@@ -39,11 +39,12 @@ const PLAYER_IDLE_BOB_HEIGHT: float = 10.0
 # 武器設定
 const PLAYER_WEAPON_SPRITE: String = "res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0103.png"
 const PLAYER_WEAPON_SCALE: float = 2.0
-const PLAYER_WEAPON_OFFSET: Vector2 = Vector2(30, -10)  # プレイヤーからの相対位置
+const PLAYER_WEAPON_OFFSET: Vector2 = Vector2(20, 32)  # プレイヤーの腰の位置（最適な位置に調整）
+const PLAYER_WEAPON_INITIAL_ROTATION: float = 30.0  # 武器の初期回転角度（時計回り30度）
 
 # 攻撃設定
 const PLAYER_ATTACK_DURATION: float = 0.5  # 攻撃アニメーション時間（秒）
-const PLAYER_ATTACK_ROTATION_ANGLE: float = 90.0  # 剣を振る角度（度）
+const PLAYER_ATTACK_ROTATION_ANGLE: float = 70.0  # 剣を振る角度（度）- 適度な振り幅
 
 # =============================================================================
 # 地面・スクロール設定
@@ -97,7 +98,7 @@ const ENEMY_SPAWN_X: float = SCREEN_WIDTH + 50.0  # 画面右端外側
 const ENEMY_TARGET_X: float = -100.0  # 画面左端外側まで歩く
 
 # 戦闘設定
-const ENEMY_ENCOUNTER_DISTANCE: float = 50.0  # 接近判定距離（ピクセル）
+const ENEMY_ENCOUNTER_DISTANCE: float = 70.0  # 接近判定距離（ピクセル）- 少し離れた位置で戦闘開始
 
 # =============================================================================
 # テスト・デバッグ設定

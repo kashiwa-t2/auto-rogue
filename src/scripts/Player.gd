@@ -75,9 +75,20 @@ func _setup_weapon() -> void:
 		if weapon_texture:
 			weapon_sprite.texture = weapon_texture
 			weapon_sprite.scale = Vector2(GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_SCALE)
+			
+			# 剣の柄（画像の中央下）をプレイヤーの腰の位置に固定
+			var texture_size = weapon_texture.get_size()
+			
+			# 剣の柄の中央部分が回転中心となるよう設定
 			weapon_sprite.position = GameConstants.PLAYER_WEAPON_OFFSET
-			weapon_initial_rotation = weapon_sprite.rotation_degrees
-			_log_debug("Weapon initialized: scale=%f, position=%s" % [GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_OFFSET])
+			weapon_sprite.offset = Vector2(-texture_size.x * 0.2, -texture_size.y * 0.5)  # 柄の中央付近を回転中心に
+			
+			# 剣を敵よりも手前に表示するためz_indexを設定
+			weapon_sprite.z_index = 10
+			
+			weapon_sprite.rotation_degrees = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
+			weapon_initial_rotation = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
+			_log_debug("Weapon initialized: scale=%f, position=%s, rotation=%f, offset=%s, z_index=%d" % [GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_OFFSET, weapon_initial_rotation, weapon_sprite.offset, weapon_sprite.z_index])
 		else:
 			_log_error("Failed to load weapon sprite")
 	else:
