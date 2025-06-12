@@ -131,7 +131,7 @@ const ENEMY_STRONG_ATTACK_DAMAGE: int = 25
 const ENEMY_BOSS_ATTACK_DAMAGE: int = 40
 
 # 敵HP設定
-const ENEMY_BASIC_HP: int = 100
+const ENEMY_BASIC_HP: int = 200
 const ENEMY_FAST_HP: int = 30
 const ENEMY_STRONG_HP: int = 80
 const ENEMY_BOSS_HP: int = 200

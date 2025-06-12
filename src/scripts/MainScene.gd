@@ -1,7 +1,7 @@
 extends Control
 
 ## メインシーン管理クラス
-## プレイヤー制御、複数敵管理、UI管理、スクロール管理、テスト実行を担当
+## プレイヤー制御、複数敵同時攻撃管理、UI管理、スクロール管理、テスト実行を担当
 
 @onready var player: Player = $PlayArea/Player
 @onready var background_scroller: BackgroundScroller = $PlayArea/BackgroundScroller
@@ -15,11 +15,11 @@ var scroll_manager: ScrollManager
 var traveled_distance: float = 0.0
 var is_in_battle: bool = false
 
-# 複数敵同時出現システム
+# 複数敵同時攻撃システム
 var enemy_spawn_timer: Timer
 var active_enemies: Array[EnemyBase] = []          # 全アクティブ敵
-var current_battle_target: EnemyBase = null       # 現在戦闘中の敵
-var waiting_enemies: Array[EnemyBase] = []        # 戦闘待ち敵（キュー）
+var battle_enemies: Array[EnemyBase] = []          # 戦闘中の敵（複数）
+var current_attack_target: EnemyBase = null       # 現在攻撃対象の敵（1体のみ）
 
 # エネミーシーンの参照
 const BasicEnemyScene = preload("res://src/scenes/BasicEnemy.tscn")
@@ -88,8 +88,8 @@ func _setup_scroll_signals() -> void:
 func _setup_distance_tracking() -> void:
 	traveled_distance = 0.0
 	active_enemies.clear()
-	waiting_enemies.clear()
-	current_battle_target = null
+	battle_enemies.clear()
+	current_attack_target = null
 	is_in_battle = false
 	_update_distance_display()
 	_log_debug("Distance tracking initialized")
@@ -171,7 +171,7 @@ func _spawn_enemy() -> void:
 		_log_debug("BasicEnemy spawned by timer at distance: %d m (Active enemies: %d)" % [int(traveled_distance), active_enemies.size()])
 
 # =============================================================================
-# 複数敵戦闘システム（1対1戦闘・待機キュー制御）
+# 複数敵同時攻撃システム（複数敵vs1プレイヤー・攻撃優先順位制御）
 # =============================================================================
 
 func _check_player_enemy_proximity() -> void:
@@ -180,61 +180,55 @@ func _check_player_enemy_proximity() -> void:
 	
 	# 無効な敵を配列から削除
 	active_enemies = active_enemies.filter(func(enemy): return is_instance_valid(enemy))
-	waiting_enemies = waiting_enemies.filter(func(enemy): return is_instance_valid(enemy))
+	battle_enemies = battle_enemies.filter(func(enemy): return is_instance_valid(enemy))
 	
-	# 戦闘中でない場合、最も近い敵との戦闘を開始
-	if not is_in_battle and active_enemies.size() > 0:
-		var closest_enemy: EnemyBase = null
-		var closest_distance: float = INF
+	# プレイヤーに接近した敵を戦闘リストに追加
+	for enemy in active_enemies:
+		if enemy in battle_enemies:
+			continue  # 既に戦闘中の敵はスキップ
 		
-		for enemy in active_enemies:
-			if enemy in waiting_enemies:
-				continue  # 待機中の敵はスキップ
-			var distance = player.position.distance_to(enemy.position)
-			if distance <= GameConstants.ENEMY_ENCOUNTER_DISTANCE and distance < closest_distance:
-				closest_distance = distance
-				closest_enemy = enemy
-		
-		if closest_enemy:
-			_start_battle_with_target(closest_enemy)
+		var distance = player.position.distance_to(enemy.position)
+		if distance <= GameConstants.ENEMY_ENCOUNTER_DISTANCE:
+			_log_debug("Enemy approaching! Distance: %.1f, threshold: %.1f" % [distance, GameConstants.ENEMY_ENCOUNTER_DISTANCE])
+			_add_enemy_to_battle(enemy)
 	
-	# 戦闘中でも、2体目以降の敵がプレイヤーに近づいた場合は待機状態にする
-	elif is_in_battle:
-		for enemy in active_enemies:
-			if enemy == current_battle_target or enemy in waiting_enemies:
-				continue  # 戦闘中の敵と既に待機中の敵はスキップ
-			
-			var distance = player.position.distance_to(enemy.position)
-			if distance <= GameConstants.ENEMY_ENCOUNTER_DISTANCE + 30.0:  # 少し余裕を持たせる
-				_add_enemy_to_waiting_queue(enemy)
+	# 戦闘中の敵がいる場合、戦闘状態を維持
+	if battle_enemies.size() > 0 and not is_in_battle:
+		_start_battle()
+	elif battle_enemies.size() == 0 and is_in_battle:
+		_end_battle()
+	
+	# 攻撃ターゲットの更新（先に接近した敵を優先）
+	_update_attack_target()
 
-## 戦闘開始（特定のターゲットと）
-func _start_battle_with_target(target_enemy: EnemyBase) -> void:
+## 戦闘開始（複数敵同時攻撃）
+func _start_battle() -> void:
 	is_in_battle = true
-	current_battle_target = target_enemy
 	_pause_game_progression()
 	_start_player_attack()
 	
-	# ターゲット敵に戦闘状態を通知
-	if current_battle_target:
-		current_battle_target.set_battle_state(true)
+	# 全ての戦闘中敵に戦闘状態を通知
+	for enemy in battle_enemies:
+		if is_instance_valid(enemy):
+			enemy.set_battle_state(true)
 	
-	_log_debug("Battle started with target enemy! Distance: %d m (Active enemies: %d)" % [int(traveled_distance), active_enemies.size()])
+	_log_debug("Battle started! Distance: %d m (Battle enemies: %d)" % [int(traveled_distance), battle_enemies.size()])
 
 ## 戦闘終了
 func _end_battle() -> void:
 	is_in_battle = false
 	_resume_game_progression()
 	
-	# ターゲット敵に戦闘終了を通知
-	if current_battle_target:
-		current_battle_target.set_battle_state(false)
-		current_battle_target = null
+	# 全ての戦闘中敵に戦闘終了を通知・移動再開
+	for enemy in battle_enemies:
+		if is_instance_valid(enemy):
+			enemy.set_battle_state(false)
+			enemy.is_walking = true  # 移動再開
 	
-	# 待機中の敵がいる場合、次の戦闘を開始
-	_start_next_battle_if_waiting()
+	battle_enemies.clear()
+	current_attack_target = null
 	
-	_log_debug("Battle ended! (Active enemies: %d, Waiting: %d)" % [active_enemies.size(), waiting_enemies.size()])
+	_log_debug("Battle ended! (Active enemies: %d)" % active_enemies.size())
 
 ## ゲーム進行の停止（背景スクロールのみ）
 func _pause_game_progression() -> void:
@@ -262,10 +256,10 @@ func _start_player_attack() -> void:
 ## プレイヤー攻撃イベントハンドラー
 func _on_player_attack_started() -> void:
 	_log_debug("Player attack started")
-	# 現在の戦闘ターゲットにのみダメージを与える
-	if current_battle_target and is_instance_valid(current_battle_target) and is_in_battle:
+	# 現在の攻撃ターゲットにのみダメージを与える
+	if current_attack_target and is_instance_valid(current_attack_target) and is_in_battle:
 		var damage = PlayerStats.get_attack_damage()
-		current_battle_target.take_damage(damage)
+		current_attack_target.take_damage(damage)
 		_log_debug("Player dealt %d damage to target enemy" % damage)
 
 func _on_player_attack_finished() -> void:
@@ -293,20 +287,20 @@ func _on_enemy_died(enemy: EnemyBase) -> void:
 	_log_debug("Enemy died!")
 	if enemy:
 		_remove_enemy_from_active_list(enemy)
-		# 死亡した敵が現在の戦闘ターゲットの場合、戦闘終了
-		if enemy == current_battle_target:
-			_end_battle()
-		_log_debug("Enemy removed from active list (Active enemies: %d)" % active_enemies.size())
+		# 死亡した敵が現在の攻撃ターゲットの場合、次のターゲットに切り替え
+		if enemy == current_attack_target:
+			_update_attack_target()
+		_log_debug("Enemy removed from lists (Active: %d, Battle: %d)" % [active_enemies.size(), battle_enemies.size()])
 
 ## 敵がプレイヤーを攻撃したイベントハンドラー
 func _on_enemy_attacked_player(damage: int, enemy: EnemyBase) -> void:
-	# 現在の戦闘ターゲットからの攻撃のみ受ける
-	if enemy and enemy == current_battle_target:
-		_log_debug("Target enemy attacked player for %d damage" % damage)
+	# 戦闘中の敵からの攻撃は全て受ける
+	if enemy and enemy in battle_enemies:
+		_log_debug("Battle enemy attacked player for %d damage" % damage)
 		if player and is_instance_valid(player):
 			player.take_damage(damage)
 	else:
-		_log_debug("Non-target enemy attack ignored")
+		_log_debug("Non-battle enemy attack ignored")
 
 ## プレイヤー死亡イベントハンドラー
 func _on_player_died() -> void:
@@ -372,34 +366,45 @@ func _on_upgrade_completed() -> void:
 	_update_gold_display()
 
 # =============================================================================
-# 複数敵同時出現システム - 管理関数
+# 複数敵同時攻撃システム - 管理関数
 # =============================================================================
 
 func _remove_enemy_from_active_list(enemy: EnemyBase) -> void:
-	"""敵をアクティブ・待機リストから削除"""
+	"""敵をアクティブ・戦闘リストから削除"""
 	if enemy in active_enemies:
 		active_enemies.erase(enemy)
 		_log_debug("Enemy removed from active list")
-	if enemy in waiting_enemies:
-		waiting_enemies.erase(enemy)
-		_log_debug("Enemy removed from waiting list")
+	if enemy in battle_enemies:
+		battle_enemies.erase(enemy)
+		_log_debug("Enemy removed from battle list")
 
-func _add_enemy_to_waiting_queue(enemy: EnemyBase) -> void:
-	"""敵を戦闘待ちキューに追加（プレイヤー通り抜け防止）"""
-	if enemy not in waiting_enemies:
-		waiting_enemies.append(enemy)
-		enemy.is_walking = false  # 待機中は移動停止でプレイヤー前で待機
-		_log_debug("Enemy added to waiting queue (Waiting enemies: %d)" % waiting_enemies.size())
+func _add_enemy_to_battle(enemy: EnemyBase) -> void:
+	"""敵を戦闘リストに追加（複数敵同時攻撃開始）"""
+	if enemy not in battle_enemies:
+		battle_enemies.append(enemy)
+		# 新しく追加された敵を即座に戦闘状態に設定
+		enemy.set_battle_state(true)
+		enemy.is_walking = false  # 戦闘中は移動停止
+		_log_debug("Enemy added to battle and set to combat state (Battle enemies: %d)" % battle_enemies.size())
 
-func _start_next_battle_if_waiting() -> void:
-	"""戦闘終了時、待機中の敵がいれば次の戦闘を自動開始（FIFO方式）"""
-	if waiting_enemies.size() > 0:
-		# FIFO: 最初に待機した敵を戦闘ターゲットに
-		var next_enemy = waiting_enemies[0]
-		waiting_enemies.erase(next_enemy)
-		next_enemy.is_walking = true  # 移動再開
-		_start_battle_with_target(next_enemy)
-		_log_debug("Started next battle with waiting enemy (Remaining waiting: %d)" % waiting_enemies.size())
+func _update_attack_target() -> void:
+	"""攻撃ターゲットを更新（先に接近した敵を優先）"""
+	if battle_enemies.size() == 0:
+		current_attack_target = null
+		return
+	
+	# 現在のターゲットが有効で戦闘中なら維持
+	if current_attack_target and current_attack_target in battle_enemies and is_instance_valid(current_attack_target):
+		return
+	
+	# 最初の戦闘中敵を新しいターゲットに（先入先攻撃）
+	for enemy in battle_enemies:
+		if is_instance_valid(enemy):
+			current_attack_target = enemy
+			_log_debug("Attack target updated to: Enemy (Battle enemies: %d)" % battle_enemies.size())
+			return
+	
+	current_attack_target = null
 
 ## イベントハンドラー
 func _on_player_position_changed(new_position: Vector2) -> void:
