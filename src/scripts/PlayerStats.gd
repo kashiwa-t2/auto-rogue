@@ -36,6 +36,8 @@ func level_up_character() -> bool:
 		total_coins -= cost
 		character_level += 1
 		_log_debug("Character leveled up to %d! Cost: %d coins" % [character_level, cost])
+		# コイン消費時にオートセーブ実行
+		SaveManager.autosave()
 		return true
 	return false
 
@@ -46,6 +48,8 @@ func level_up_weapon() -> bool:
 		total_coins -= cost
 		weapon_level += 1
 		_log_debug("Weapon leveled up to %d! Cost: %d coins" % [weapon_level, cost])
+		# コイン消費時にオートセーブ実行
+		SaveManager.autosave()
 		return true
 	return false
 
@@ -60,6 +64,8 @@ func spend_coins(amount: int) -> bool:
 	if total_coins >= amount:
 		total_coins -= amount
 		_log_debug("Spent %d coins. Remaining: %d" % [amount, total_coins])
+		# コイン消費時にオートセーブ実行
+		SaveManager.autosave()
 		return true
 	return false
 
@@ -86,6 +92,14 @@ func reset() -> void:
 	weapon_level = 1
 	total_coins = 0
 	_log_debug("Player stats reset to default")
+
+func reset_stats() -> void:
+	"""ステータスをリセット（新規ゲーム用）"""
+	reset()
+
+func _update_stats() -> void:
+	"""ステータス更新（SaveManagerからのロード後に呼び出し）"""
+	_log_debug("Stats updated - Character Lv: %d, Weapon Lv: %d, Coins: %d" % [character_level, weapon_level, total_coins])
 
 ## デバッグログ出力
 func _log_debug(message: String) -> void:

@@ -209,6 +209,30 @@ func collect_coin(coin_value: int) -> void:
 func get_total_coins() -> int:
 	return total_coins
 
+## PlayerStatsからステータスを更新
+func update_stats_from_player_stats() -> void:
+	"""PlayerStatsシングルトンから最新のステータスを取得して更新"""
+	# 最大HPを更新
+	max_hp = PlayerStats.get_max_hp()
+	# 現在HPが最大HPを超える場合は調整
+	if current_hp > max_hp:
+		current_hp = max_hp
+	
+	# 攻撃力を更新
+	attack_damage = PlayerStats.get_attack_damage()
+	
+	# コイン数を同期
+	total_coins = PlayerStats.total_coins
+	
+	# HPバーを更新
+	if hp_bar:
+		hp_bar.update_hp(current_hp, max_hp)
+	
+	# HPシグナルを発火
+	hp_changed.emit(current_hp, max_hp)
+	
+	_log_debug("Stats updated from PlayerStats - HP: %d/%d, Attack: %d, Coins: %d" % [current_hp, max_hp, attack_damage, total_coins])
+
 func _update_idle_animation(delta: float) -> void:
 	"""アイドルアニメーションの更新（位置の浮遊）"""
 	time_passed += delta

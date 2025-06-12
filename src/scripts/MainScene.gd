@@ -21,6 +21,9 @@ var active_enemies: Array[EnemyBase] = []          # 全アクティブ敵
 var battle_enemies: Array[EnemyBase] = []          # 戦闘中の敵（複数）
 var current_attack_target: EnemyBase = null       # 現在攻撃対象の敵（1体のみ）
 
+# オートセーブ
+var autosave_timer: Timer
+
 # エネミーシーンの参照
 const BasicEnemyScene = preload("res://src/scenes/BasicEnemy.tscn")
 
@@ -33,7 +36,11 @@ func _ready():
 	_setup_gold_display()
 	_setup_upgrade_ui()
 	_setup_enemy_spawn_timer()
+	_setup_autosave_timer()
 	_load_player_data()
+	
+	# オートセーブ実行
+	SaveManager.autosave()
 	
 	# シーン開始時のフェードイン（SceneTransitionが自動的に処理）
 
@@ -452,6 +459,23 @@ func pause_all_scrolls() -> void:
 func resume_all_scrolls() -> void:
 	if scroll_manager:
 		scroll_manager.resume_all_scrollers()
+
+
+## オートセーブタイマーのセットアップ
+func _setup_autosave_timer() -> void:
+	"""オートセーブタイマーの設定"""
+	autosave_timer = Timer.new()
+	autosave_timer.wait_time = 30.0  # 30秒間隔でオートセーブ
+	autosave_timer.timeout.connect(_on_autosave_timer_timeout)
+	add_child(autosave_timer)
+	autosave_timer.start()
+	_log_debug("Autosave timer setup completed - 30 second intervals")
+
+## オートセーブタイマータイムアウト時の処理
+func _on_autosave_timer_timeout() -> void:
+	"""定期的なオートセーブ実行"""
+	SaveManager.autosave()
+	_log_debug("Autosave executed")
 
 ## ログ出力
 func _log_debug(message: String) -> void:
