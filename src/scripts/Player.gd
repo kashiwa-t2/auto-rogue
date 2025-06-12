@@ -29,14 +29,20 @@ var attack_tween: Tween
 var max_hp: int = GameConstants.PLAYER_MAX_HP
 var current_hp: int = GameConstants.PLAYER_DEFAULT_HP
 
+# コイン関連
+var total_coins: int = 0
+
 signal position_changed(new_position: Vector2)
 signal player_reset()
 signal attack_started()
 signal attack_finished()
 signal hp_changed(new_hp: int, max_hp: int)
 signal player_died()
+signal coin_collected(amount: int, total: int)
 
 func _ready():
+	# プレイヤーグループに追加
+	add_to_group("player")
 	initial_position = position
 	_setup_walk_animation()
 	_setup_weapon()
@@ -172,6 +178,19 @@ func _update_hp_bar_position() -> void:
 	var hp_bar_offset = UIPositionHelper.calculate_hp_bar_position(sprite)
 	hp_bar.position = hp_bar_offset
 	_log_debug("HP bar position updated: %s" % hp_bar_offset)
+
+## コイン収集
+func collect_coin(coin_value: int) -> void:
+	"""コインを収集する"""
+	_log_debug("BEFORE coin collection - Current total: %d, Adding: %d" % [total_coins, coin_value])
+	total_coins += coin_value
+	_log_debug("AFTER coin collection - New total: %d" % total_coins)
+	coin_collected.emit(coin_value, total_coins)
+	_log_debug("Collected coin! Value: %d, Total: %d, Signal emitted!" % [coin_value, total_coins])
+
+## 現在のコイン数取得
+func get_total_coins() -> int:
+	return total_coins
 
 func _update_idle_animation(delta: float) -> void:
 	"""アイドルアニメーションの更新（位置の浮遊）"""

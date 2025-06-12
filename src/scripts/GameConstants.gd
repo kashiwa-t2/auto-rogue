@@ -98,7 +98,7 @@ const ENEMY_SPAWN_X: float = SCREEN_WIDTH + 50.0  # 画面右端外側
 const ENEMY_TARGET_X: float = -100.0  # 画面左端外側まで歩く
 
 # 戦闘設定
-const ENEMY_ENCOUNTER_DISTANCE: float = 70.0  # 接近判定距離（ピクセル）- 少し離れた位置で戦闘開始
+const ENEMY_ENCOUNTER_DISTANCE: float = 60.0  # 接近判定距離（ピクセル）- 少し離れた位置で戦闘開始
 
 # =============================================================================
 # テスト・デバッグ設定
@@ -155,6 +155,18 @@ const DAMAGE_TEXT_FADE_DURATION: float = 1.0  # フェードアウト時間（�
 const DAMAGE_TEXT_FLOAT_HEIGHT: float = 50.0  # 浮上距離（ピクセル）
 const DAMAGE_TEXT_FLOAT_RANDOM_X: float = 20.0  # 横方向のランダム移動幅（ピクセル）
 const DAMAGE_TEXT_OFFSET: Vector2 = Vector2(0, -20)  # キャラクター上部からのオフセット
+
+# コインシステム設定
+const COIN_SCALE: float = 2.0  # コインのスケール
+const COIN_ANIMATION_SPEED: float = 6.0  # 回転アニメーション速度（フレーム/秒）
+const COIN_SPAWN_DURATION: float = 0.8  # 出現アニメーション時間（秒）
+const COIN_FLOAT_SPEED: float = 3.0  # 浮遊アニメーション速度
+const COIN_FLOAT_HEIGHT: float = 8.0  # 浮遊の上下幅（ピクセル）
+const COIN_COLLECTION_RADIUS: float = 25.0  # プレイヤーとの収集判定距離（ピクセル）
+const COIN_COLLECTION_DURATION: float = 0.6  # プレイヤーに向かう移動時間（秒）
+const COIN_COLLECTION_OFFSET: Vector2 = Vector2(0, -15)  # プレイヤー中心からのオフセット
+const COIN_DROP_BASE_VALUE: int = 1  # 基本コイン価値
+const COIN_DROP_RANDOM_BONUS: int = 1  # ランダムボーナス範囲（0〜1）
 
 # =============================================================================
 # ゲームプレイ設定（将来の拡張用）

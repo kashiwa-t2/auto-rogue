@@ -175,6 +175,7 @@ func _on_hp_changed(new_hp: int, maximum_hp: int) -> void:
 func _on_hp_depleted() -> void:
 	"""HPが0になった時の処理"""
 	_log_debug("Enemy died!")
+	_spawn_coin()
 	enemy_died.emit()
 	destroy()
 
@@ -204,6 +205,35 @@ func _update_hp_bar_position() -> void:
 	var hp_bar_offset = UIPositionHelper.calculate_hp_bar_position(sprite)
 	hp_bar.position = hp_bar_offset
 	_log_debug("HP bar position updated: %s" % hp_bar_offset)
+
+## コインをスポーンする
+func _spawn_coin() -> void:
+	"""敵死亡時にコインを生成"""
+	var coin_scene = preload("res://src/scenes/Coin.tscn")
+	var coin_instance = coin_scene.instantiate()
+	
+	# コイン価値を設定（1-2のランダム）
+	var coin_value = GameConstants.COIN_DROP_BASE_VALUE + randi() % (GameConstants.COIN_DROP_RANDOM_BONUS + 1)
+	
+	# 出現位置を設定（敵の位置に少しランダム性を加える）
+	var spawn_offset = Vector2(
+		randf_range(-20.0, 20.0),
+		randf_range(-10.0, 10.0)
+	)
+	coin_instance.position = position + spawn_offset
+	
+	# 親ノード（PlayArea）に追加
+	var parent = get_parent()
+	if parent:
+		parent.add_child(coin_instance)
+		# コイン価値を設定（_readyの後に呼び出す）
+		coin_instance.call_deferred("set_coin_value", coin_value)
+		# MainSceneとのシグナル接続も遅延実行
+		coin_instance.call_deferred("_connect_to_main_scene")
+		_log_debug("Coin spawned with value: %d at position: %s" % [coin_value, coin_instance.position])
+	else:
+		_log_error("Cannot spawn coin: parent node not found")
+		coin_instance.queue_free()
 
 ## テクスチャの安全な読み込み
 func _load_texture_safe(path: String) -> Texture2D:

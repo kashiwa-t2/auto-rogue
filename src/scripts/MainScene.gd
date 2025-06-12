@@ -7,6 +7,7 @@ extends Control
 @onready var background_scroller: BackgroundScroller = $PlayArea/BackgroundScroller
 @onready var ground_scroller: GroundScroller = $PlayArea/GroundScroller
 @onready var distance_label: Label = $PlayArea/DistanceLabel
+@onready var gold_label: Label = $PlayArea/GoldUI/GoldLabel
 
 var scroll_manager: ScrollManager
 var traveled_distance: float = 0.0
@@ -23,6 +24,7 @@ func _ready():
 	_setup_player_signals()
 	_setup_scroll_signals()
 	_setup_distance_tracking()
+	_setup_gold_display()
 
 func _process(delta):
 	if not is_in_battle:
@@ -60,6 +62,7 @@ func _setup_player_signals() -> void:
 	player.attack_started.connect(_on_player_attack_started)
 	player.attack_finished.connect(_on_player_attack_finished)
 	player.player_died.connect(_on_player_died)
+	player.coin_collected.connect(_on_player_coin_collected)
 	_log_debug("Player signals connected")
 
 ## スクロールシグナルの設定
@@ -76,6 +79,11 @@ func _setup_distance_tracking() -> void:
 	_update_distance_display()
 	_log_debug("Distance tracking initialized")
 
+## ゴールド表示の設定
+func _setup_gold_display() -> void:
+	_update_gold_display()
+	_log_debug("Gold display initialized")
+
 ## 移動距離の更新
 func _update_traveled_distance(delta: float) -> void:
 	traveled_distance += GameConstants.PLAYER_TRAVEL_SPEED * delta
@@ -86,6 +94,16 @@ func _update_traveled_distance(delta: float) -> void:
 func _update_distance_display() -> void:
 	if distance_label:
 		distance_label.text = "%d m" % int(traveled_distance)
+
+## ゴールド表示の更新
+func _update_gold_display() -> void:
+	if gold_label and player:
+		var current_coins = player.get_total_coins()
+		_log_debug("Updating gold display: %d coins" % current_coins)
+		gold_label.text = "%d" % current_coins
+		_log_debug("Gold label text set to: %s" % gold_label.text)
+	else:
+		_log_error("Cannot update gold display - gold_label: %s, player: %s" % [gold_label != null, player != null])
 
 ## 敵の出現チェック
 func _check_enemy_spawn() -> void:
@@ -232,6 +250,18 @@ func _on_player_died() -> void:
 	
 	# TODO: ゲームオーバー処理を追加（将来の実装）
 	_log_debug("Game Over - Player has been defeated!")
+
+## プレイヤーコイン収集イベントハンドラー
+func _on_player_coin_collected(amount: int, total: int) -> void:
+	_log_debug("RECEIVED coin_collected signal! Amount: %d, Total: %d" % [amount, total])
+	_log_debug("BEFORE UI update - Player total coins: %d" % (player.get_total_coins() if player else -1))
+	_update_gold_display()
+	_log_debug("AFTER UI update completed")
+
+## コイン収集完了イベントハンドラー
+func _on_coin_collected(value: int) -> void:
+	_log_debug("Coin collection animation completed! Value: %d" % value)
+	# 追加のUI更新があればここで実行
 
 ## イベントハンドラー
 func _on_player_position_changed(new_position: Vector2) -> void:
