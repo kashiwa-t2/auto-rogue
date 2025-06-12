@@ -195,7 +195,17 @@ func is_alive() -> bool:
 ## ダメージテキストの表示
 func _show_damage_text(damage: int) -> void:
 	"""敵の上にダメージ数値をアニメーション付きで表示"""
-	UIPositionHelper.show_damage_text(sprite, damage, position, get_parent(), "EnemyBase")
+	# DamageTextクラスのインスタンスを作成
+	var damage_text = preload("res://src/scripts/DamageText.gd").new()
+	
+	# 表示位置を計算
+	var text_position = UIPositionHelper.calculate_damage_text_position(sprite, position)
+	
+	# 親ノードに追加
+	var parent = get_parent()
+	if parent:
+		parent.add_child(damage_text)
+		damage_text.initialize_damage_text(damage, text_position, false)  # 敵ダメージ = オレンジ色
 
 ## HPバー位置の更新
 func _update_hp_bar_position() -> void:

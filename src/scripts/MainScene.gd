@@ -235,15 +235,20 @@ func _end_battle() -> void:
 	_resume_game_progression()
 	
 	# 全ての戦闘中敵に戦闘終了を通知・移動再開
+	var battle_enemies_count = battle_enemies.size()
 	for enemy in battle_enemies:
 		if is_instance_valid(enemy):
 			enemy.set_battle_state(false)
 			enemy.is_walking = true  # 移動再開
+			_log_debug("Enemy released from battle - Walking: true, Battle: false")
 	
 	battle_enemies.clear()
 	current_attack_target = null
 	
-	_log_debug("Battle ended! (Active enemies: %d)" % active_enemies.size())
+	# 戦闘終了後、全ての生存敵の移動状態を確認・再開
+	_ensure_all_enemies_walking()
+	
+	_log_debug("Battle ended! Released %d enemies from battle (Active enemies: %d)" % [battle_enemies_count, active_enemies.size()])
 
 ## ゲーム進行の停止（背景スクロールのみ）
 func _pause_game_progression() -> void:
@@ -313,6 +318,19 @@ func _on_enemy_died(enemy: EnemyBase) -> void:
 		# 死亡した敵が現在の攻撃ターゲットの場合、次のターゲットに切り替え
 		if enemy == current_attack_target:
 			_update_attack_target()
+		
+		# 全ての生存敵の歩行状態を強制的に確認・修復
+		_ensure_all_enemies_walking()
+		
+		# 戦闘状態の再評価：戦闘中の敵がいなくなった場合は戦闘終了
+		# そうでない場合は残りの敵の移動状態を確認
+		if battle_enemies.size() == 0:
+			# 戦闘終了処理は_check_player_enemy_proximityで自動実行される
+			_log_debug("No more battle enemies - battle will end")
+		else:
+			# まだ戦闘中の敵がいる場合、戦闘外の敵の移動を再開
+			_resume_non_battle_enemies_movement()
+		
 		_log_debug("Enemy removed from lists (Active: %d, Battle: %d)" % [active_enemies.size(), battle_enemies.size()])
 
 ## 敵がプレイヤーを攻撃したイベントハンドラー
@@ -408,7 +426,7 @@ func _add_enemy_to_battle(enemy: EnemyBase) -> void:
 		# 新しく追加された敵を即座に戦闘状態に設定
 		enemy.set_battle_state(true)
 		enemy.is_walking = false  # 戦闘中は移動停止
-		_log_debug("Enemy added to battle and set to combat state (Battle enemies: %d)" % battle_enemies.size())
+		_log_debug("Enemy added to battle and set to combat state (Battle enemies: %d, Walking: false)" % battle_enemies.size())
 
 func _update_attack_target() -> void:
 	"""攻撃ターゲットを更新（先に接近した敵を優先）"""
@@ -428,6 +446,31 @@ func _update_attack_target() -> void:
 			return
 	
 	current_attack_target = null
+
+## 戦闘外の敵の移動を再開
+func _resume_non_battle_enemies_movement() -> void:
+	"""戦闘中でない敵の移動を再開させる"""
+	for enemy in active_enemies:
+		if is_instance_valid(enemy) and enemy not in battle_enemies:
+			# 戦闘中でない敵は移動を再開
+			if not enemy.is_walking:
+				enemy.is_walking = true
+				_log_debug("Non-battle enemy movement resumed")
+
+## 全ての敵の移動状態を確認・再開
+func _ensure_all_enemies_walking() -> void:
+	"""全ての生存敵の移動状態を確認し、戦闘中でない敵は移動を再開させる"""
+	var restored_count = 0
+	for enemy in active_enemies:
+		if is_instance_valid(enemy):
+			# 戦闘中でない敵は移動を再開
+			if not enemy.is_in_battle and not enemy.is_walking:
+				enemy.is_walking = true
+				restored_count += 1
+				_log_debug("Enemy walking state restored (Battle: %s, Walking: %s -> true)" % [enemy.is_in_battle, false])
+	
+	if restored_count > 0:
+		_log_debug("Restored walking state for %d enemies" % restored_count)
 
 ## イベントハンドラー
 func _on_player_position_changed(new_position: Vector2) -> void:

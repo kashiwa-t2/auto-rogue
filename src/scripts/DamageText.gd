@@ -15,21 +15,27 @@ func _ready():
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 ## ダメージテキストの初期化と表示開始
-func initialize_damage_text(damage: int, start_position: Vector2) -> void:
+func initialize_damage_text(damage: int, start_position: Vector2, is_player_damage: bool = true) -> void:
 	damage_amount = damage
 	text = str(damage)
 	position = start_position
 	
 	# テキストスタイルの設定
 	add_theme_font_size_override("font_size", GameConstants.DAMAGE_TEXT_FONT_SIZE)
-	add_theme_color_override("font_color", GameConstants.DAMAGE_TEXT_COLOR)
+	
+	# プレイヤーか敵かで色を分ける
+	if is_player_damage:
+		add_theme_color_override("font_color", GameConstants.DAMAGE_TEXT_PLAYER_COLOR)
+	else:
+		add_theme_color_override("font_color", GameConstants.DAMAGE_TEXT_ENEMY_COLOR)
+	
 	add_theme_color_override("font_shadow_color", GameConstants.DAMAGE_TEXT_SHADOW_COLOR)
 	add_theme_constant_override("shadow_offset_x", 2)
 	add_theme_constant_override("shadow_offset_y", 2)
 	
 	# アニメーション開始
 	_start_float_animation()
-	_log_debug("Damage text initialized: %d at position %s" % [damage, start_position])
+	_log_debug("Damage text initialized: %d at position %s (player: %s)" % [damage, start_position, is_player_damage])
 
 ## フロートアニメーションの開始
 func _start_float_animation() -> void:

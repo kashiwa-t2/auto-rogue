@@ -145,12 +145,12 @@ func _find_player() -> Node2D:
 func _draw_value_text() -> void:
 	"""_draw()メソッドで価値テキストを直接描画"""
 	var text = "+%d" % coin_value
-	var font_size = 20
+	var font_size = 32
 	
 	# コインのサイズとスケールを考慮して位置を計算
 	var coin_size = Vector2(16, 16)  # tile_0151.pngの元サイズ
 	var scaled_size = coin_size * GameConstants.COIN_SCALE  # 実際の表示サイズ
-	var text_x = scaled_size.x / 2 + 2  # コインの右端からもっと近い位置
+	var text_x = scaled_size.x / 2 + 5  # コインの右端から適切な位置（フォント32px対応）
 	
 	# フォントメトリクスを使って正確な中央配置を計算
 	var font_ascent = text_font.get_ascent(font_size)
