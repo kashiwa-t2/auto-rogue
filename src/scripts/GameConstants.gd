@@ -93,7 +93,7 @@ const ENEMY_ANIMATION_SPEED: float = 4.0  # フレーム/秒
 const ENEMY_SPRITE_FLIP_H: bool = false  # 左右反転（左向きに歩く）
 
 # 出現設定
-const ENEMY_SPAWN_DISTANCE: float = 5.0  # 5m地点で出現
+const ENEMY_SPAWN_INTERVAL: float = 5.0  # 5秒間隔で出現
 const ENEMY_SPAWN_X: float = SCREEN_WIDTH + 50.0  # 画面右端外側
 const ENEMY_TARGET_X: float = -100.0  # 画面左端外側まで歩く
 
