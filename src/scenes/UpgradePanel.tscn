@@ -1,0 +1,104 @@
+[gd_scene load_steps=3 format=3 uid="uid://bg8m4n7q5kx2p"]
+
+[ext_resource type="Texture2D" uid="uid://j7rf8vbqe363" path="res://assets/sprites/kenney_pixel-platformer/Tiles/tile_0151.png" id="1_coin_texture"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0.15, 0.15, 0.15, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.5, 0.5, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2"]
+bg_color = Color(0.2, 0.5, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.1, 0.3, 0.1, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="UpgradePanel" type="Panel"]
+custom_minimum_size = Vector2(330, 220)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -165.0
+offset_top = -110.0
+offset_right = 165.0
+offset_bottom = 110.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_1")
+
+[node name="MainContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="MainContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 1, 0.8, 1)
+theme_override_font_sizes/font_size = 24
+text = "タイトル"
+horizontal_alignment = 1
+
+[node name="InfoContainer" type="VBoxContainer" parent="MainContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 5
+
+[node name="LevelLabel" type="Label" parent="MainContainer/InfoContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "レベル 1"
+horizontal_alignment = 1
+
+[node name="EffectLabel" type="Label" parent="MainContainer/InfoContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 16
+text = "効果: 100 → 120"
+horizontal_alignment = 1
+
+[node name="CostContainer" type="HBoxContainer" parent="MainContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="CoinIcon" type="TextureRect" parent="MainContainer/CostContainer"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+texture = ExtResource("1_coin_texture")
+stretch_mode = 4
+
+[node name="CostLabel" type="Label" parent="MainContainer/CostContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0, 1)
+theme_override_font_sizes/font_size = 18
+text = "10"
+vertical_alignment = 1
+
+[node name="UpgradeButton" type="Button" parent="MainContainer"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_2")
+text = "レベルアップ"

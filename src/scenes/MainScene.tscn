@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://dqxxhwuau4w7o"]
+[gd_scene load_steps=12 format=3 uid="uid://dqxxhwuau4w7o"]
 
 [ext_resource type="Script" uid="uid://dq648hmylocmh" path="res://src/scripts/MainScene.gd" id="1_main_script"]
 [ext_resource type="PackedScene" uid="uid://c3fxp4k5n6m7o" path="res://src/scenes/Player.tscn" id="2_player_scene"]
@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://j7rf8vbqe363" path="res://assets/sprites/kenney_pixel-platformer/Tiles/tile_0151.png" id="5_coin_texture"]
 [ext_resource type="Script" path="res://src/scripts/GameOverScreen.gd" id="6_gameover_script"]
 [ext_resource type="Script" path="res://src/scripts/UpgradeUI.gd" id="7_upgrade_script"]
+[ext_resource type="PackedScene" uid="uid://bg8m4n7q5kx2p" path="res://src/scenes/UpgradePanel.tscn" id="8_upgrade_panel"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
 bg_color = Color(0.1, 0.1, 0.1, 0.8)
@@ -218,203 +219,33 @@ text = "0"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="UpgradeContainer" type="HBoxContainer" parent="UIArea/UpgradeUI"]
+[node name="UpgradeContainer" type="GridContainer" parent="UIArea/UpgradeUI"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -320.0
-offset_top = -200.0
-offset_right = 320.0
-offset_bottom = 200.0
+offset_left = -345.0
+offset_top = -235.0
+offset_right = 345.0
+offset_bottom = 235.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 40
-
-[node name="CharacterUpgrade" type="Panel" parent="UIArea/UpgradeUI/UpgradeContainer"]
-custom_minimum_size = Vector2(300, 400)
+columns = 2
+theme_override_constants/h_separation = 30
+theme_override_constants/v_separation = 30
+[node name="CharacterUpgrade" parent="UIArea/UpgradeUI/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_2")
 
-[node name="Title" type="Label" parent="UIArea/UpgradeUI/UpgradeContainer/CharacterUpgrade"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -100.0
-offset_top = 20.0
-offset_right = 100.0
-offset_bottom = 60.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(0.8, 1, 0.8, 1)
-theme_override_font_sizes/font_size = 28
-text = "キャラクター"
-horizontal_alignment = 1
-
-[node name="InfoContainer" type="VBoxContainer" parent="UIArea/UpgradeUI/UpgradeContainer/CharacterUpgrade"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -120.0
-offset_top = -80.0
-offset_right = 120.0
-offset_bottom = 0.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="LevelLabel" type="Label" parent="UIArea/UpgradeUI/UpgradeContainer/CharacterUpgrade/InfoContainer"]
+[node name="WeaponUpgrade" parent="UIArea/UpgradeUI/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "レベル 1"
-horizontal_alignment = 1
 
-[node name="HPLabel" type="Label" parent="UIArea/UpgradeUI/UpgradeContainer/CharacterUpgrade/InfoContainer"]
+[node name="AttackSpeedUpgrade" parent="UIArea/UpgradeUI/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_font_sizes/font_size = 20
-text = "HP: 100 → 120"
-horizontal_alignment = 1
 
-[node name="CostContainer" type="HBoxContainer" parent="UIArea/UpgradeUI/UpgradeContainer/CharacterUpgrade"]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -80.0
-offset_top = -120.0
-offset_right = 80.0
-offset_bottom = -80.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="CoinIcon" type="TextureRect" parent="UIArea/UpgradeUI/UpgradeContainer/CharacterUpgrade/CostContainer"]
-custom_minimum_size = Vector2(32, 32)
+[node name="PotionEffectUpgrade" parent="UIArea/UpgradeUI/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
-texture = ExtResource("5_coin_texture")
-stretch_mode = 4
-
-[node name="CostLabel" type="Label" parent="UIArea/UpgradeUI/UpgradeContainer/CharacterUpgrade/CostContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0, 1)
-theme_override_font_sizes/font_size = 24
-text = "10"
-vertical_alignment = 1
-
-[node name="UpgradeButton" type="Button" parent="UIArea/UpgradeUI/UpgradeContainer/CharacterUpgrade"]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -100.0
-offset_top = -60.0
-offset_right = 100.0
-offset_bottom = -20.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_font_sizes/font_size = 24
-theme_override_styles/normal = SubResource("StyleBoxFlat_3")
-text = "レベルアップ"
-
-[node name="WeaponUpgrade" type="Panel" parent="UIArea/UpgradeUI/UpgradeContainer"]
-custom_minimum_size = Vector2(300, 400)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_2")
-
-[node name="Title" type="Label" parent="UIArea/UpgradeUI/UpgradeContainer/WeaponUpgrade"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -100.0
-offset_top = 20.0
-offset_right = 100.0
-offset_bottom = 60.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.8, 1)
-theme_override_font_sizes/font_size = 28
-text = "武器"
-horizontal_alignment = 1
-
-[node name="InfoContainer" type="VBoxContainer" parent="UIArea/UpgradeUI/UpgradeContainer/WeaponUpgrade"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -120.0
-offset_top = -80.0
-offset_right = 120.0
-offset_bottom = 0.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="LevelLabel" type="Label" parent="UIArea/UpgradeUI/UpgradeContainer/WeaponUpgrade/InfoContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "レベル 1"
-horizontal_alignment = 1
-
-[node name="DamageLabel" type="Label" parent="UIArea/UpgradeUI/UpgradeContainer/WeaponUpgrade/InfoContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_font_sizes/font_size = 20
-text = "攻撃力: 20 → 25"
-horizontal_alignment = 1
-
-[node name="CostContainer" type="HBoxContainer" parent="UIArea/UpgradeUI/UpgradeContainer/WeaponUpgrade"]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -80.0
-offset_top = -120.0
-offset_right = 80.0
-offset_bottom = -80.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="CoinIcon" type="TextureRect" parent="UIArea/UpgradeUI/UpgradeContainer/WeaponUpgrade/CostContainer"]
-custom_minimum_size = Vector2(32, 32)
-layout_mode = 2
-texture = ExtResource("5_coin_texture")
-stretch_mode = 4
-
-[node name="CostLabel" type="Label" parent="UIArea/UpgradeUI/UpgradeContainer/WeaponUpgrade/CostContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0, 1)
-theme_override_font_sizes/font_size = 24
-text = "10"
-vertical_alignment = 1
-
-[node name="UpgradeButton" type="Button" parent="UIArea/UpgradeUI/UpgradeContainer/WeaponUpgrade"]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -100.0
-offset_top = -60.0
-offset_right = 100.0
-offset_bottom = -20.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_font_sizes/font_size = 24
-theme_override_styles/normal = SubResource("StyleBoxFlat_3")
-text = "レベルアップ"
-
 [node name="GameOverScreen" type="Control" parent="."]
 visible = false
 layout_mode = 1

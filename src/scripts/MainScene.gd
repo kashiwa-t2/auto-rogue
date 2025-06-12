@@ -78,6 +78,7 @@ func _setup_player_signals() -> void:
 	player.position_changed.connect(_on_player_position_changed)
 	player.player_reset.connect(_on_player_reset)
 	player.attack_started.connect(_on_player_attack_started)
+	player.attack_hit.connect(_on_player_attack_hit)
 	player.attack_finished.connect(_on_player_attack_finished)
 	player.player_died.connect(_on_player_died)
 	player.coin_collected.connect(_on_player_coin_collected)
@@ -199,19 +200,26 @@ func _check_player_enemy_proximity() -> void:
 			_log_debug("Enemy approaching! Distance: %.1f, threshold: %.1f" % [distance, GameConstants.ENEMY_ENCOUNTER_DISTANCE])
 			_add_enemy_to_battle(enemy)
 	
+	# 攻撃ターゲットの更新（戦闘開始前に必須）
+	_update_attack_target()
+	
 	# 戦闘中の敵がいる場合、戦闘状態を維持
 	if battle_enemies.size() > 0 and not is_in_battle:
 		_start_battle()
 	elif battle_enemies.size() == 0 and is_in_battle:
 		_end_battle()
-	
-	# 攻撃ターゲットの更新（先に接近した敵を優先）
-	_update_attack_target()
 
 ## 戦闘開始（複数敵同時攻撃）
 func _start_battle() -> void:
 	is_in_battle = true
 	_pause_game_progression()
+	
+	# 攻撃ターゲットが設定されていることを確認
+	if current_attack_target:
+		_log_debug("Battle started with attack target: %s" % current_attack_target)
+	else:
+		_log_debug("WARNING: Battle started but no attack target set!")
+	
 	_start_player_attack()
 	
 	# 全ての戦闘中敵に戦闘状態を通知
@@ -219,7 +227,7 @@ func _start_battle() -> void:
 		if is_instance_valid(enemy):
 			enemy.set_battle_state(true)
 	
-	_log_debug("Battle started! Distance: %d m (Battle enemies: %d)" % [int(traveled_distance), battle_enemies.size()])
+	_log_debug("Battle started! Distance: %d m (Battle enemies: %d, Target: %s)" % [int(traveled_distance), battle_enemies.size(), "SET" if current_attack_target else "NULL"])
 
 ## 戦闘終了
 func _end_battle() -> void:
@@ -262,21 +270,29 @@ func _start_player_attack() -> void:
 
 ## プレイヤー攻撃イベントハンドラー
 func _on_player_attack_started() -> void:
-	_log_debug("Player attack started")
+	_log_debug("Player attack animation started")
+
+## プレイヤー攻撃ヒットイベントハンドラー（実際のダメージタイミング）
+func _on_player_attack_hit() -> void:
+	_log_debug("Player attack hit!")
 	# 現在の攻撃ターゲットにのみダメージを与える
 	if current_attack_target and is_instance_valid(current_attack_target) and is_in_battle:
 		var damage = PlayerStats.get_attack_damage()
 		current_attack_target.take_damage(damage)
 		_log_debug("Player dealt %d damage to target enemy" % damage)
+	else:
+		_log_debug("Attack hit but no valid target found")
 
 func _on_player_attack_finished() -> void:
 	_log_debug("Player attack finished")
 	# 戦闘中なら次の攻撃を開始
 	if is_in_battle:
-		# 少し間を空けてから次の攻撃
-		await get_tree().create_timer(0.3).timeout
+		# 攻撃速度レベルに基づく動的な攻撃間隔
+		var attack_interval = PlayerStats.get_attack_interval()
+		await get_tree().create_timer(attack_interval).timeout
 		if is_in_battle:  # まだ戦闘中かチェック
 			_start_player_attack()
+			_log_debug("Next attack started with interval: %.2fs" % attack_interval)
 
 ## 敵イベントハンドラー
 func _on_enemy_reached_target(enemy: EnemyBase) -> void:

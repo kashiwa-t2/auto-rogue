@@ -147,7 +147,7 @@ const HP_BAR_DAMAGE_COLOR: Color = Color(0.8, 0.2, 0.2, 1.0)  # 赤
 # ダメージテキスト表示設定
 const DAMAGE_TEXT_FONT_SIZE: int = 48
 const DAMAGE_TEXT_CRITICAL_FONT_SIZE: int = 56
-const DAMAGE_TEXT_COLOR: Color = Color(1.0, 1.0, 0.0, 1.0)  # 黄色
+const DAMAGE_TEXT_COLOR: Color = Color(1.0, 1.0, 1.0, 1.0)  # 白色
 const DAMAGE_TEXT_CRITICAL_COLOR: Color = Color(1.0, 0.3, 0.3, 1.0)  # 赤色
 const DAMAGE_TEXT_SHADOW_COLOR: Color = Color(0.0, 0.0, 0.0, 0.8)  # 黒影
 const DAMAGE_TEXT_DURATION: float = 1.5  # アニメーション時間（秒）
@@ -169,6 +169,18 @@ const COIN_DROP_BASE_VALUE: int = 10  # 基本コイン価値
 const COIN_DROP_RANDOM_BONUS: int = 10  # ランダムボーナス範囲（0〜10）
 
 # =============================================================================
+# 回復薬システム設定
+# =============================================================================
+const HEALTH_POTION_DROP_CHANCE: float = 0.2  # 20%の確率でドロップ
+const HEALTH_POTION_HEAL_AMOUNT: int = 20  # 回復量
+const HEALTH_POTION_SPRITE: String = "res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0114.png"  # ポーション画像
+const HEALTH_POTION_SCALE: float = 2.0  # ポーションのスケール
+const HEALTH_POTION_FLOAT_SPEED: float = 3.0  # 浮遊アニメーション速度
+const HEALTH_POTION_FLOAT_HEIGHT: float = 8.0  # 浮遊の上下幅（ピクセル）
+const HEALTH_POTION_LIFETIME: float = 3.0  # 自動消失時間（秒）
+const HEALTH_POTION_COLLECTION_RADIUS: float = 30.0  # プレイヤーとの収集判定距離（ピクセル）
+
+# =============================================================================
 # レベルアップシステム設定
 # =============================================================================
 # キャラクターレベルアップ
@@ -178,6 +190,16 @@ const BASE_CHARACTER_LEVEL_UP_COST: int = 10  # 基本レベルアップコス�
 # 武器レベルアップ
 const DAMAGE_PER_WEAPON_LEVEL: int = 5  # レベルごとの攻撃力増加量
 const BASE_WEAPON_LEVEL_UP_COST: int = 10  # 基本レベルアップコスト
+
+# 攻撃速度レベルアップ
+const ATTACK_SPEED_REDUCTION_PER_LEVEL: float = 0.05  # レベルごとの攻撃間隔短縮（秒）
+const BASE_ATTACK_SPEED_LEVEL_UP_COST: int = 15  # 基本レベルアップコスト
+const BASE_ATTACK_INTERVAL: float = 0.8  # 基本攻撃間隔（秒）
+const MIN_ATTACK_INTERVAL: float = 0.2  # 最小攻撃間隔（秒）
+
+# ポーション効果レベルアップ
+const POTION_HEAL_INCREASE_PER_LEVEL: int = 5  # レベルごとの回復量増加
+const BASE_POTION_LEVEL_UP_COST: int = 12  # 基本レベルアップコスト
 
 # =============================================================================
 # ゲームプレイ設定（将来の拡張用）

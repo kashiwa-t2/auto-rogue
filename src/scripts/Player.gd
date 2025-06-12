@@ -38,6 +38,7 @@ var total_coins: int = 0
 signal position_changed(new_position: Vector2)
 signal player_reset()
 signal attack_started()
+signal attack_hit()  # 剣が実際に敵に当たるタイミング
 signal attack_finished()
 signal hp_changed(new_hp: int, max_hp: int)
 signal player_died()
@@ -279,11 +280,22 @@ func start_attack() -> void:
 	
 	# 剣を振るアニメーション
 	var target_rotation = weapon_initial_rotation + GameConstants.PLAYER_ATTACK_ROTATION_ANGLE
-	attack_tween.tween_property(weapon_sprite, "rotation_degrees", target_rotation, GameConstants.PLAYER_ATTACK_DURATION / 2.0)
-	attack_tween.tween_property(weapon_sprite, "rotation_degrees", weapon_initial_rotation, GameConstants.PLAYER_ATTACK_DURATION / 2.0)
+	var hit_time = GameConstants.PLAYER_ATTACK_DURATION / 2.0  # 攻撃の中間点でヒット
+	
+	# 1回目: 初期位置から最大回転まで（ここで敵にヒット）
+	attack_tween.tween_property(weapon_sprite, "rotation_degrees", target_rotation, hit_time)
+	# 最大回転に到達したタイミングでヒットシグナル発火
+	attack_tween.tween_callback(_on_attack_hit)
+	# 2回目: 最大回転から初期位置まで
+	attack_tween.tween_property(weapon_sprite, "rotation_degrees", weapon_initial_rotation, hit_time)
 	
 	# アニメーション完了時のコールバック
 	attack_tween.finished.connect(_on_attack_finished)
+
+## 攻撃ヒット時の処理
+func _on_attack_hit() -> void:
+	attack_hit.emit()
+	_log_debug("Attack hit - damage should be dealt now")
 
 ## 攻撃アニメーション終了
 func _on_attack_finished() -> void:

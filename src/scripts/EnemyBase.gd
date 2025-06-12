@@ -176,6 +176,7 @@ func _on_hp_depleted() -> void:
 	"""HPが0になった時の処理"""
 	_log_debug("Enemy died!")
 	_spawn_coin()
+	_try_spawn_health_potion()
 	enemy_died.emit()
 	destroy()
 
@@ -234,6 +235,67 @@ func _spawn_coin() -> void:
 	else:
 		_log_error("Cannot spawn coin: parent node not found")
 		coin_instance.queue_free()
+
+## 回復薬をスポーンする（20%の確率）
+func _try_spawn_health_potion() -> void:
+	"""敵死亡時に20%の確率で回復薬を生成し、即座にプレイヤーを回復"""
+	# 20%の確率チェック
+	if randf() > GameConstants.HEALTH_POTION_DROP_CHANCE:
+		return
+	
+	# プレイヤーを検索して即座に回復
+	var player = _find_player()
+	if player and player.has_method("heal"):
+		var heal_amount = PlayerStats.get_potion_heal_amount()
+		player.heal(heal_amount)
+		_log_debug("Player healed immediately for %d HP" % heal_amount)
+	else:
+		_log_error("Player not found for health potion healing")
+		return
+	
+	# 視覚的フィードバック用にHealthPotionシーンを表示
+	var health_potion_scene = preload("res://src/scenes/HealthPotion.tscn")
+	var health_potion_instance = health_potion_scene.instantiate()
+	
+	# 出現位置を設定（敵の位置に少しランダム性を加える）
+	var spawn_offset = Vector2(
+		randf_range(-25.0, 25.0),
+		randf_range(-15.0, 15.0)
+	)
+	health_potion_instance.position = position + spawn_offset
+	
+	# 親ノード（PlayArea）に追加
+	var parent = get_parent()
+	if parent:
+		parent.add_child(health_potion_instance)
+		_log_debug("Health potion visual effect spawned at position: %s" % health_potion_instance.position)
+	else:
+		_log_error("Cannot spawn health potion visual: parent node not found")
+		health_potion_instance.queue_free()
+
+## プレイヤーノードを検索
+func _find_player() -> Node2D:
+	"""プレイヤーノードを検索"""
+	# グループからプレイヤーを検索
+	var players = get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		return players[0] as Node2D
+	
+	# パス検索
+	var player_by_path = get_node_or_null("../../Player")
+	if player_by_path:
+		return player_by_path as Node2D
+	
+	# 親を辿ってPlayAreaを見つけてからプレイヤーを取得
+	var current = get_parent()
+	while current:
+		if current.name == "PlayArea":
+			var player_node = current.get_node_or_null("Player")
+			if player_node:
+				return player_node as Node2D
+		current = current.get_parent()
+	
+	return null
 
 ## テクスチャの安全な読み込み
 func _load_texture_safe(path: String) -> Texture2D:
