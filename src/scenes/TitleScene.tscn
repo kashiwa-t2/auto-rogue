@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://d0gm2oouoxoe0"]
 
-[ext_resource type="Script" path="res://src/scripts/TitleScene.gd" id="1_title_script"]
+[ext_resource type="Script" uid="uid://dxltudyb675q4" path="res://src/scripts/TitleScene.gd" id="1_title_script"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
 bg_color = Color(0.2, 0.4, 0.2, 1)
@@ -72,9 +72,9 @@ theme_override_constants/separation = 20
 [node name="StartButton" type="Button" parent="TitleContainer/ButtonContainer"]
 custom_minimum_size = Vector2(300, 80)
 layout_mode = 2
+theme_override_colors/font_hover_color = Color(1, 1, 0, 1)
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_colors/font_hover_color = Color(1, 1, 0, 1)
 theme_override_font_sizes/font_size = 36
 theme_override_styles/normal = SubResource("StyleBoxFlat_1")
 text = "ゲーム開始"

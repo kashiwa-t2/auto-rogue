@@ -93,7 +93,7 @@ const ENEMY_ANIMATION_SPEED: float = 4.0  # フレーム/秒
 const ENEMY_SPRITE_FLIP_H: bool = false  # 左右反転（左向きに歩く）
 
 # 出現設定
-const ENEMY_SPAWN_DISTANCE: float = 1.0  # 1m地点で出現
+const ENEMY_SPAWN_DISTANCE: float = 5.0  # 5m地点で出現
 const ENEMY_SPAWN_X: float = SCREEN_WIDTH + 50.0  # 画面右端外側
 const ENEMY_TARGET_X: float = -100.0  # 画面左端外側まで歩く
 
@@ -165,8 +165,19 @@ const COIN_FLOAT_HEIGHT: float = 8.0  # 浮遊の上下幅（ピクセル）
 const COIN_COLLECTION_RADIUS: float = 25.0  # プレイヤーとの収集判定距離（ピクセル）
 const COIN_COLLECTION_DURATION: float = 0.6  # プレイヤーに向かう移動時間（秒）
 const COIN_COLLECTION_OFFSET: Vector2 = Vector2(0, -15)  # プレイヤー中心からのオフセット
-const COIN_DROP_BASE_VALUE: int = 1  # 基本コイン価値
-const COIN_DROP_RANDOM_BONUS: int = 1  # ランダムボーナス範囲（0〜1）
+const COIN_DROP_BASE_VALUE: int = 10  # 基本コイン価値
+const COIN_DROP_RANDOM_BONUS: int = 10  # ランダムボーナス範囲（0〜10）
+
+# =============================================================================
+# レベルアップシステム設定
+# =============================================================================
+# キャラクターレベルアップ
+const HP_PER_CHARACTER_LEVEL: int = 20  # レベルごとのHP増加量
+const BASE_CHARACTER_LEVEL_UP_COST: int = 10  # 基本レベルアップコスト
+
+# 武器レベルアップ
+const DAMAGE_PER_WEAPON_LEVEL: int = 5  # レベルごとの攻撃力増加量
+const BASE_WEAPON_LEVEL_UP_COST: int = 10  # 基本レベルアップコスト
 
 # =============================================================================
 # ゲームプレイ設定（将来の拡張用）

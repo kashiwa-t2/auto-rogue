@@ -29,6 +29,9 @@ var attack_tween: Tween
 var max_hp: int = GameConstants.PLAYER_MAX_HP
 var current_hp: int = GameConstants.PLAYER_DEFAULT_HP
 
+# 攻撃力
+var attack_damage: int = GameConstants.PLAYER_DEFAULT_ATTACK_DAMAGE
+
 # コイン関連
 var total_coins: int = 0
 
@@ -47,6 +50,7 @@ func _ready():
 	_setup_walk_animation()
 	_setup_weapon()
 	_setup_hp_system()
+	_initialize_player_stats()
 	_log_debug("Player initialized at position: %s" % position)
 
 func _physics_process(delta):
@@ -120,6 +124,19 @@ func _setup_hp_system() -> void:
 		_log_debug("HP system initialized: %d/%d" % [current_hp, max_hp])
 	else:
 		_log_error("HP bar node not found")
+
+## プレイヤーステータスの初期化
+func _initialize_player_stats() -> void:
+	"""プレイヤーのステータスをPlayerStatsから取得"""
+	max_hp = PlayerStats.get_max_hp()
+	current_hp = max_hp
+	attack_damage = PlayerStats.get_attack_damage()
+	
+	# HPバーを再初期化
+	if hp_bar:
+		hp_bar.initialize_hp(current_hp, max_hp)
+	
+	_log_debug("Player stats initialized - HP: %d/%d, Attack: %d" % [current_hp, max_hp, attack_damage])
 
 ## ダメージを受ける
 func take_damage(damage: int) -> void:

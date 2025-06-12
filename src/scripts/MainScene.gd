@@ -9,12 +9,14 @@ extends Control
 @onready var distance_label: Label = $PlayArea/DistanceLabel
 @onready var gold_label: Label = $PlayArea/GoldUI/GoldLabel
 @onready var game_over_screen: Control = $GameOverScreen
+@onready var upgrade_ui: UpgradeUI = $UIArea/UpgradeUI
 
 var scroll_manager: ScrollManager
 var traveled_distance: float = 0.0
 var enemy_spawned: bool = false
 var is_in_battle: bool = false
 var current_enemy: EnemyBase = null
+var last_enemy_spawn_distance: float = 0.0
 
 # エネミーシーンの参照
 const BasicEnemyScene = preload("res://src/scenes/BasicEnemy.tscn")
@@ -26,6 +28,8 @@ func _ready():
 	_setup_scroll_signals()
 	_setup_distance_tracking()
 	_setup_gold_display()
+	_setup_upgrade_ui()
+	_load_player_data()
 	
 	# シーン開始時のフェードイン（SceneTransitionが自動的に処理）
 
@@ -79,6 +83,8 @@ func _setup_scroll_signals() -> void:
 ## 距離トラッキングの設定
 func _setup_distance_tracking() -> void:
 	traveled_distance = 0.0
+	last_enemy_spawn_distance = 0.0
+	enemy_spawned = false
 	_update_distance_display()
 	_log_debug("Distance tracking initialized")
 
@@ -86,6 +92,14 @@ func _setup_distance_tracking() -> void:
 func _setup_gold_display() -> void:
 	_update_gold_display()
 	_log_debug("Gold display initialized")
+
+## 育成UI の初期設定
+func _setup_upgrade_ui() -> void:
+	if upgrade_ui:
+		upgrade_ui.upgrade_completed.connect(_on_upgrade_completed)
+		_log_debug("Upgrade UI initialized")
+	else:
+		_log_error("Upgrade UI not found!")
 
 ## 移動距離の更新
 func _update_traveled_distance(delta: float) -> void:
@@ -100,19 +114,24 @@ func _update_distance_display() -> void:
 
 ## ゴールド表示の更新
 func _update_gold_display() -> void:
-	if gold_label and player:
-		var current_coins = player.get_total_coins()
-		_log_debug("Updating gold display: %d coins" % current_coins)
-		gold_label.text = "%d" % current_coins
-		_log_debug("Gold label text set to: %s" % gold_label.text)
-	else:
-		_log_error("Cannot update gold display - gold_label: %s, player: %s" % [gold_label != null, player != null])
+	if gold_label:
+		gold_label.text = "%d" % PlayerStats.total_coins
+		_log_debug("Gold display updated: %d coins" % PlayerStats.total_coins)
+	
+	# 育成UIも更新
+	if upgrade_ui:
+		upgrade_ui.update_display()
 
 ## 敵の出現チェック
 func _check_enemy_spawn() -> void:
-	if not enemy_spawned and traveled_distance >= GameConstants.ENEMY_SPAWN_DISTANCE:
+	# 5mごとに敵を出現させる
+	var next_spawn_distance = last_enemy_spawn_distance + GameConstants.ENEMY_SPAWN_DISTANCE
+	if not enemy_spawned and traveled_distance >= next_spawn_distance:
+		_log_debug("Enemy spawn triggered at %.1f m (next spawn was %.1f m)" % [traveled_distance, next_spawn_distance])
 		_spawn_enemy()
 		enemy_spawned = true
+		last_enemy_spawn_distance = next_spawn_distance
+		_log_debug("Next enemy will spawn at %.1f m" % (last_enemy_spawn_distance + GameConstants.ENEMY_SPAWN_DISTANCE))
 
 ## 敵をスポーンさせる
 func _spawn_enemy() -> void:
@@ -201,7 +220,7 @@ func _on_player_attack_started() -> void:
 	_log_debug("Player attack started")
 	# 敵にダメージを与える
 	if current_enemy and is_instance_valid(current_enemy) and is_in_battle:
-		var damage = GameConstants.PLAYER_DEFAULT_ATTACK_DAMAGE
+		var damage = PlayerStats.get_attack_damage()
 		current_enemy.take_damage(damage)
 		_log_debug("Player dealt %d damage to enemy" % damage)
 
@@ -218,21 +237,25 @@ func _on_player_attack_finished() -> void:
 func _on_enemy_reached_target() -> void:
 	current_enemy = null
 	is_in_battle = false
+	enemy_spawned = false  # 次の敵の出現を許可
 	_resume_game_progression()
 	_log_debug("Enemy reached target and was removed")
 
 func _on_enemy_destroyed() -> void:
 	current_enemy = null
 	is_in_battle = false
+	enemy_spawned = false  # 次の敵の出現を許可
 	_resume_game_progression()
 	_log_debug("Enemy was destroyed")
 
 ## 敵死亡イベントハンドラー
 func _on_enemy_died() -> void:
-	_log_debug("Enemy died! Battle ended.")
+	_log_debug("Enemy died! Battle ended. Resetting enemy_spawned flag.")
 	current_enemy = null
 	is_in_battle = false
+	enemy_spawned = false  # 次の敵の出現を許可
 	_resume_game_progression()
+	_log_debug("Next enemy will be able to spawn at %.1f m" % (last_enemy_spawn_distance + GameConstants.ENEMY_SPAWN_DISTANCE))
 
 ## 敵がプレイヤーを攻撃したイベントハンドラー
 func _on_enemy_attacked_player(damage: int) -> void:
@@ -263,14 +286,45 @@ func _on_player_died() -> void:
 ## プレイヤーコイン収集イベントハンドラー
 func _on_player_coin_collected(amount: int, total: int) -> void:
 	_log_debug("RECEIVED coin_collected signal! Amount: %d, Total: %d" % [amount, total])
-	_log_debug("BEFORE UI update - Player total coins: %d" % (player.get_total_coins() if player else -1))
+	# PlayerStatsに反映
+	PlayerStats.add_coins(amount)
 	_update_gold_display()
-	_log_debug("AFTER UI update completed")
+	_log_debug("PlayerStats updated with %d coins. Total: %d" % [amount, PlayerStats.total_coins])
+
+## プレイヤーデータの読み込み
+func _load_player_data() -> void:
+	"""ゲーム開始時にプレイヤーデータを読み込み"""
+	# TODO: 将来的にはセーブファイルから読み込み
+	# 現在はデフォルト値で初期化
+	_log_debug("Player data loaded from defaults")
 
 ## コイン収集完了イベントハンドラー
 func _on_coin_collected(value: int) -> void:
 	_log_debug("Coin collection animation completed! Value: %d" % value)
 	# 追加のUI更新があればここで実行
+
+## レベルアップ完了イベントハンドラー
+func _on_upgrade_completed() -> void:
+	_log_debug("Upgrade completed! Updating player stats...")
+	# プレイヤーのステータスを更新
+	if player:
+		var old_max_hp = player.max_hp
+		var new_max_hp = PlayerStats.get_max_hp()
+		var hp_increase = new_max_hp - old_max_hp
+		
+		# 最大HPを更新し、現在HPも増加分だけ追加
+		player.max_hp = new_max_hp
+		player.current_hp += hp_increase
+		
+		# 現在HPが最大HPを超えないようにクランプ
+		player.current_hp = min(player.current_hp, player.max_hp)
+		
+		# HPバーも更新
+		if player.hp_bar:
+			player.hp_bar.initialize_hp(player.current_hp, player.max_hp)
+		_log_debug("Player HP updated: %d/%d (increased by %d)" % [player.current_hp, player.max_hp, hp_increase])
+	
+	_update_gold_display()
 
 ## イベントハンドラー
 func _on_player_position_changed(new_position: Vector2) -> void:
