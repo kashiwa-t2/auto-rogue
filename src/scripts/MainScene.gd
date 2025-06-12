@@ -59,6 +59,7 @@ func _setup_player_signals() -> void:
 	player.player_reset.connect(_on_player_reset)
 	player.attack_started.connect(_on_player_attack_started)
 	player.attack_finished.connect(_on_player_attack_finished)
+	player.player_died.connect(_on_player_died)
 	_log_debug("Player signals connected")
 
 ## スクロールシグナルの設定
@@ -109,6 +110,7 @@ func _spawn_enemy() -> void:
 		enemy_instance.enemy_destroyed.connect(_on_enemy_destroyed)
 		enemy_instance.enemy_battle_state_changed.connect(_on_enemy_battle_state_changed)
 		enemy_instance.enemy_died.connect(_on_enemy_died)
+		enemy_instance.enemy_attacked_player.connect(_on_enemy_attacked_player)
 		
 		# PlayAreaに追加
 		$PlayArea.add_child(enemy_instance)
@@ -210,6 +212,26 @@ func _on_enemy_died() -> void:
 	current_enemy = null
 	is_in_battle = false
 	_resume_game_progression()
+
+## 敵がプレイヤーを攻撃したイベントハンドラー
+func _on_enemy_attacked_player(damage: int) -> void:
+	_log_debug("Enemy attacked player for %d damage" % damage)
+	if player and is_instance_valid(player):
+		player.take_damage(damage)
+
+## プレイヤー死亡イベントハンドラー
+func _on_player_died() -> void:
+	_log_debug("Player died! Game over.")
+	is_in_battle = false
+	_pause_game_progression()
+	
+	# プレイヤーを削除
+	if player and is_instance_valid(player):
+		player.queue_free()
+		player = null
+	
+	# TODO: ゲームオーバー処理を追加（将来の実装）
+	_log_debug("Game Over - Player has been defeated!")
 
 ## イベントハンドラー
 func _on_player_position_changed(new_position: Vector2) -> void:

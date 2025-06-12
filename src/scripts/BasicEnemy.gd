@@ -86,6 +86,7 @@ func _perform_charge_attack() -> void:
 	
 	# 完全な攻撃サイクルを順次実行で実装（正しいGodot 4構文）
 	battle_tween.tween_property(self, "position", charge_target, 0.4)  # 1. 突進 0.4秒
+	battle_tween.tween_callback(_deal_damage_to_player)                # 突進完了時にダメージ
 	battle_tween.tween_property(self, "position", current_pos, 0.6)    # 2. 戻り 0.6秒（0.4秒後に開始）
 	battle_tween.tween_interval(1.5)                                   # 3. 待機 1.5秒（1.0秒後に開始）
 	
@@ -118,6 +119,14 @@ func _end_charge_animation() -> void:
 		battle_tween = null
 	
 	_log_debug("Ended charge animation")
+
+## プレイヤーに攻撃ダメージを与える
+func _deal_damage_to_player() -> void:
+	"""プレイヤーに攻撃ダメージを与える"""
+	# MainSceneに攻撃シグナルを送る
+	var damage = GameConstants.ENEMY_BASIC_ATTACK_DAMAGE
+	enemy_attacked_player.emit(damage)
+	_log_debug("Enemy attacked player for %d damage" % damage)
 
 ## テクスチャの安全な読み込み
 func _load_texture_safe(path: String) -> Texture2D:

@@ -106,7 +106,8 @@ func _setup_weapon() -> void:
 func _setup_hp_system() -> void:
 	"""HPシステムとHPバーの初期化"""
 	if hp_bar:
-		hp_bar.position = GameConstants.HP_BAR_OFFSET
+		# スプライトサイズから中央位置を計算してHPバー位置を設定
+		_update_hp_bar_position()
 		hp_bar.initialize_hp(current_hp, max_hp)
 		hp_bar.hp_changed.connect(_on_hp_changed)
 		hp_bar.hp_depleted.connect(_on_hp_depleted)
@@ -121,6 +122,9 @@ func take_damage(damage: int) -> void:
 		hp_bar.take_damage(damage)
 		current_hp = hp_bar.get_current_hp()
 		_log_debug("Player took %d damage, HP: %d/%d" % [damage, current_hp, max_hp])
+	
+	# ダメージテキストを表示
+	_show_damage_text(damage)
 
 ## HPを回復
 func heal(amount: int) -> void:
@@ -153,6 +157,21 @@ func get_max_hp() -> int:
 ## 生存確認
 func is_alive() -> bool:
 	return current_hp > 0
+
+## ダメージテキストの表示
+func _show_damage_text(damage: int) -> void:
+	"""プレイヤーの上にダメージ数値をアニメーション付きで表示"""
+	UIPositionHelper.show_damage_text(sprite, damage, position, get_parent(), "Player")
+
+## HPバー位置の更新
+func _update_hp_bar_position() -> void:
+	"""スプライトサイズに基づいてHPバー位置を動的に計算"""
+	if not hp_bar:
+		return
+	
+	var hp_bar_offset = UIPositionHelper.calculate_hp_bar_position(sprite)
+	hp_bar.position = hp_bar_offset
+	_log_debug("HP bar position updated: %s" % hp_bar_offset)
 
 func _update_idle_animation(delta: float) -> void:
 	"""アイドルアニメーションの更新（位置の浮遊）"""

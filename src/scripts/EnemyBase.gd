@@ -39,6 +39,7 @@ signal enemy_destroyed()
 signal enemy_battle_state_changed(in_battle: bool)
 signal enemy_hp_changed(new_hp: int, max_hp: int)
 signal enemy_died()
+signal enemy_attacked_player(damage: int)
 
 func _ready():
 	initial_position = position
@@ -136,7 +137,8 @@ func _setup_hp_system() -> void:
 	current_hp = max_hp
 	
 	if hp_bar:
-		hp_bar.position = GameConstants.HP_BAR_OFFSET
+		# スプライトサイズから中央位置を計算してHPバー位置を設定
+		_update_hp_bar_position()
 		hp_bar.initialize_hp(current_hp, max_hp)
 		hp_bar.hp_changed.connect(_on_hp_changed)
 		hp_bar.hp_depleted.connect(_on_hp_depleted)
@@ -191,21 +193,17 @@ func is_alive() -> bool:
 ## ダメージテキストの表示
 func _show_damage_text(damage: int) -> void:
 	"""敵の上にダメージ数値をアニメーション付きで表示"""
-	# DamageTextクラスのインスタンスを作成
-	var damage_text = preload("res://src/scripts/DamageText.gd").new()
+	UIPositionHelper.show_damage_text(sprite, damage, position, get_parent(), "EnemyBase")
+
+## HPバー位置の更新
+func _update_hp_bar_position() -> void:
+	"""スプライトサイズに基づいてHPバー位置を動的に計算"""
+	if not hp_bar:
+		return
 	
-	# 表示位置を計算（敵の上部）
-	var text_position = position + GameConstants.DAMAGE_TEXT_OFFSET
-	
-	# 親ノード（PlayArea）に追加
-	var parent = get_parent()
-	if parent:
-		parent.add_child(damage_text)
-		damage_text.initialize_damage_text(damage, text_position)
-		_log_debug("Damage text displayed: %d at position %s" % [damage, text_position])
-	else:
-		_log_error("Cannot display damage text: parent node not found")
-		damage_text.queue_free()
+	var hp_bar_offset = UIPositionHelper.calculate_hp_bar_position(sprite)
+	hp_bar.position = hp_bar_offset
+	_log_debug("HP bar position updated: %s" % hp_bar_offset)
 
 ## テクスチャの安全な読み込み
 func _load_texture_safe(path: String) -> Texture2D:

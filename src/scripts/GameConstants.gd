@@ -124,6 +124,12 @@ const PLAYER_MAX_HP: int = 100
 # プレイヤー攻撃設定
 const PLAYER_DEFAULT_ATTACK_DAMAGE: int = 20
 
+# 敵攻撃設定
+const ENEMY_BASIC_ATTACK_DAMAGE: int = 15
+const ENEMY_FAST_ATTACK_DAMAGE: int = 10
+const ENEMY_STRONG_ATTACK_DAMAGE: int = 25
+const ENEMY_BOSS_ATTACK_DAMAGE: int = 40
+
 # 敵HP設定
 const ENEMY_BASIC_HP: int = 100
 const ENEMY_FAST_HP: int = 30
@@ -139,8 +145,8 @@ const HP_BAR_HEALTH_COLOR: Color = Color(0.2, 0.8, 0.2, 1.0)  # 緑
 const HP_BAR_DAMAGE_COLOR: Color = Color(0.8, 0.2, 0.2, 1.0)  # 赤
 
 # ダメージテキスト表示設定
-const DAMAGE_TEXT_FONT_SIZE: int = 32
-const DAMAGE_TEXT_CRITICAL_FONT_SIZE: int = 40
+const DAMAGE_TEXT_FONT_SIZE: int = 48
+const DAMAGE_TEXT_CRITICAL_FONT_SIZE: int = 56
 const DAMAGE_TEXT_COLOR: Color = Color(1.0, 1.0, 0.0, 1.0)  # 黄色
 const DAMAGE_TEXT_CRITICAL_COLOR: Color = Color(1.0, 0.3, 0.3, 1.0)  # 赤色
 const DAMAGE_TEXT_SHADOW_COLOR: Color = Color(0.0, 0.0, 0.0, 0.8)  # 黒影
