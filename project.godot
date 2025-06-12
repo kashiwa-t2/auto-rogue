@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="auto-rogue"
-run/main_scene="res://src/scenes/MainScene.tscn"
+run/main_scene="res://src/scenes/TitleScene.tscn"
 config/features=PackedStringArray("4.4", "Mobile")
 config/icon="res://icon.svg"
 
 [autoload]
 
 GameConstants="*res://src/scripts/GameConstants.gd"
+SceneTransition="*res://src/scripts/SceneTransition.gd"
 
 [display]
 

@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://dqxxhwuau4w7o"]
+[gd_scene load_steps=8 format=3 uid="uid://dqxxhwuau4w7o"]
 
 [ext_resource type="Script" uid="uid://dq648hmylocmh" path="res://src/scripts/MainScene.gd" id="1_main_script"]
 [ext_resource type="PackedScene" uid="uid://c3fxp4k5n6m7o" path="res://src/scenes/Player.tscn" id="2_player_scene"]
 [ext_resource type="Script" uid="uid://b8hss1khqfeby" path="res://src/scripts/BackgroundScroller.gd" id="3_background_script"]
 [ext_resource type="Script" uid="uid://3q2768il6x3c" path="res://src/scripts/GroundScroller.gd" id="4_ground_script"]
 [ext_resource type="Texture2D" uid="uid://j7rf8vbqe363" path="res://assets/sprites/kenney_pixel-platformer/Tiles/tile_0151.png" id="5_coin_texture"]
+[ext_resource type="Script" path="res://src/scripts/GameOverScreen.gd" id="6_gameover_script"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
 bg_color = Color(0.1, 0.1, 0.1, 0.8)
@@ -123,3 +124,71 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.2, 0.3, 0.4, 1)
+
+[node name="GameOverScreen" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("6_gameover_script")
+
+[node name="Overlay" type="ColorRect" parent="GameOverScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8)
+
+[node name="Container" type="VBoxContainer" parent="GameOverScreen"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 30
+
+[node name="GameOverLabel" type="Label" parent="GameOverScreen/Container"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_font_sizes/font_size = 64
+text = "GAME OVER"
+horizontal_alignment = 1
+
+[node name="ResultLabel" type="Label" parent="GameOverScreen/Container"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 32
+text = "到達距離: 0 m"
+horizontal_alignment = 1
+
+[node name="CoinResultLabel" type="Label" parent="GameOverScreen/Container"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0, 1)
+theme_override_font_sizes/font_size = 32
+text = "獲得コイン: 0 枚"
+horizontal_alignment = 1
+
+[node name="ButtonContainer" type="VBoxContainer" parent="GameOverScreen/Container"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="ReturnButton" type="Button" parent="GameOverScreen/Container/ButtonContainer"]
+custom_minimum_size = Vector2(250, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "タイトルに戻る"

@@ -8,6 +8,7 @@ extends Control
 @onready var ground_scroller: GroundScroller = $PlayArea/GroundScroller
 @onready var distance_label: Label = $PlayArea/DistanceLabel
 @onready var gold_label: Label = $PlayArea/GoldUI/GoldLabel
+@onready var game_over_screen: Control = $GameOverScreen
 
 var scroll_manager: ScrollManager
 var traveled_distance: float = 0.0
@@ -25,6 +26,8 @@ func _ready():
 	_setup_scroll_signals()
 	_setup_distance_tracking()
 	_setup_gold_display()
+	
+	# シーン開始時のフェードイン（SceneTransitionが自動的に処理）
 
 func _process(delta):
 	if not is_in_battle:
@@ -243,12 +246,18 @@ func _on_player_died() -> void:
 	is_in_battle = false
 	_pause_game_progression()
 	
+	# ゲームオーバー画面を表示
+	if game_over_screen:
+		var total_coins = 0
+		if player and is_instance_valid(player):
+			total_coins = player.get_total_coins()
+		game_over_screen.show_game_over(traveled_distance, total_coins)
+	
 	# プレイヤーを削除
 	if player and is_instance_valid(player):
 		player.queue_free()
 		player = null
 	
-	# TODO: ゲームオーバー処理を追加（将来の実装）
 	_log_debug("Game Over - Player has been defeated!")
 
 ## プレイヤーコイン収集イベントハンドラー
