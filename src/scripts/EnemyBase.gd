@@ -17,6 +17,9 @@ enum EnemyType {
 @onready var walk_timer: Timer = $WalkAnimationTimer
 @onready var hp_bar = $HPBar
 
+# レベル表示用
+var level_label: Label
+
 # 基本プロパティ
 var enemy_type: EnemyType = EnemyType.BASIC
 var walk_sprites: Array[Texture2D] = []
@@ -35,6 +38,9 @@ var charge_distance: float = 30.0  # 突進距離
 var max_hp: int = 50
 var current_hp: int = 50
 
+# レベル関連
+var enemy_level: int = 1
+
 # シグナル
 signal enemy_reached_target()
 signal enemy_destroyed()
@@ -46,9 +52,10 @@ signal enemy_attacked_player(damage: int)
 func _ready():
 	initial_position = position
 	_setup_enemy()
+	_setup_level_system()
 	_setup_hp_system()
 	_setup_encounter_distance()
-	_log_debug("EnemyBase initialized at position: %s, type: %s, encounter distance: %f" % [position, EnemyType.keys()[enemy_type], encounter_distance])
+	_log_debug("EnemyBase initialized at position: %s, type: %s, level: %d, encounter distance: %f" % [position, EnemyType.keys()[enemy_type], enemy_level, encounter_distance])
 
 func _physics_process(delta):
 	# 敵は常に背景との相対速度で移動（戦闘中でも相対的に移動）
@@ -57,6 +64,56 @@ func _physics_process(delta):
 ## 敵の初期設定（派生クラスでオーバーライド）
 func _setup_enemy() -> void:
 	pass
+
+## レベルシステムの初期化
+func _setup_level_system() -> void:
+	"""敵のレベル表示を初期化"""
+	# レベルをランダムに設定（1-3の範囲）
+	enemy_level = randi_range(1, 3)
+	
+	# レベル表示用Labelを作成
+	level_label = Label.new()
+	level_label.text = "Lv.%d" % enemy_level
+	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# z_indexを設定してHPバーより前面に表示
+	level_label.z_index = 1
+	
+	# フォントスタイル設定
+	level_label.add_theme_font_size_override("font_size", 16)
+	level_label.add_theme_color_override("font_color", Color.BLACK)
+	level_label.add_theme_color_override("font_shadow_color", Color.WHITE)
+	level_label.add_theme_constant_override("shadow_offset_x", 1)
+	level_label.add_theme_constant_override("shadow_offset_y", 1)
+	level_label.add_theme_constant_override("outline_size", 1)
+	level_label.add_theme_color_override("font_outline_color", Color.WHITE)
+	
+	# ノードに追加
+	add_child(level_label)
+	
+	# レベルに応じて敵の能力を調整
+	_apply_level_scaling()
+	
+	_log_debug("Level system initialized: Level %d" % enemy_level)
+
+## レベルに応じた能力スケーリング
+func _apply_level_scaling() -> void:
+	"""レベルに応じて敵の能力を調整"""
+	var level_multiplier = 1.0 + (enemy_level - 1) * 0.5  # レベル1: 1.0倍, レベル2: 1.5倍, レベル3: 2.0倍
+	
+	# 移動速度を調整
+	charge_speed *= level_multiplier
+
+## レベル表示の位置更新
+func _update_level_label_position() -> void:
+	"""レベル表示をHPバーの上に配置"""
+	if level_label and hp_bar:
+		# HPバーの位置を基準にレベル表示を配置
+		var hp_bar_position = hp_bar.position
+		# 間隔を狭める: 25px → 18px
+		var level_offset = Vector2(0, -18)  # HPバーの18px上に配置
+		level_label.position = hp_bar_position + level_offset
+		_log_debug("Level label positioned at: %s" % level_label.position)
 
 ## 接敵距離の設定
 func _setup_encounter_distance() -> void:
@@ -175,24 +232,31 @@ func destroy() -> void:
 func _setup_hp_system() -> void:
 	"""敵のHPシステムとHPバーの初期化"""
 	# 敵タイプに応じてHPを設定
+	var base_hp: int
 	match enemy_type:
 		EnemyType.BASIC:
-			max_hp = GameConstants.ENEMY_BASIC_HP
+			base_hp = GameConstants.ENEMY_BASIC_HP
 		EnemyType.FAST:
-			max_hp = GameConstants.ENEMY_FAST_HP
+			base_hp = GameConstants.ENEMY_FAST_HP
 		EnemyType.STRONG:
-			max_hp = GameConstants.ENEMY_STRONG_HP
+			base_hp = GameConstants.ENEMY_STRONG_HP
 		EnemyType.MAGE:
-			max_hp = GameConstants.ENEMY_MAGE_HP
+			base_hp = GameConstants.ENEMY_MAGE_HP
 		EnemyType.BOSS:
-			max_hp = GameConstants.ENEMY_BOSS_HP
+			base_hp = GameConstants.ENEMY_BOSS_HP
 	
+	# レベルに応じてHPを調整
+	var level_multiplier = 1.0 + (enemy_level - 1) * 0.5  # レベル1: 1.0倍, レベル2: 1.5倍, レベル3: 2.0倍
+	max_hp = int(base_hp * level_multiplier)
 	current_hp = max_hp
 	
 	if hp_bar:
 		# スプライトサイズから中央位置を計算してHPバー位置を設定
 		_update_hp_bar_position()
 		hp_bar.initialize_hp(current_hp, max_hp)
+		
+		# レベル表示の位置をHPバーの上に設定
+		_update_level_label_position()
 		hp_bar.hp_changed.connect(_on_hp_changed)
 		hp_bar.hp_depleted.connect(_on_hp_depleted)
 		_log_debug("Enemy HP system initialized: %d/%d" % [current_hp, max_hp])
@@ -266,9 +330,13 @@ func _update_hp_bar_position() -> void:
 	if not hp_bar:
 		return
 	
-	var hp_bar_offset = UIPositionHelper.calculate_hp_bar_position(sprite)
+	var enemy_name = "Enemy_%s_Lv%d" % [EnemyType.keys()[enemy_type], enemy_level]
+	var hp_bar_offset = UIPositionHelper.calculate_hp_bar_position(sprite, enemy_name)
 	hp_bar.position = hp_bar_offset
 	_log_debug("HP bar position updated: %s" % hp_bar_offset)
+	
+	# HPバー位置が更新されたら、レベル表示の位置も更新
+	_update_level_label_position()
 
 ## コインをスポーンする
 func _spawn_coin() -> void:

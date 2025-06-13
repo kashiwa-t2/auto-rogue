@@ -18,7 +18,9 @@ func _setup_walk_animation() -> void:
 	if sprite:
 		sprite.scale = Vector2(GameConstants.ENEMY_SPRITE_SCALE, GameConstants.ENEMY_SPRITE_SCALE)
 		sprite.flip_h = GameConstants.ENEMY_SPRITE_FLIP_H
-		_log_debug("Set sprite scale: %f, flip_h: %s" % [GameConstants.ENEMY_SPRITE_SCALE, GameConstants.ENEMY_SPRITE_FLIP_H])
+		# centeredプロパティを明示的に設定（デフォルトはtrue）
+		sprite.centered = true
+		_log_debug("Set sprite scale: %f, flip_h: %s, centered: %s" % [GameConstants.ENEMY_SPRITE_SCALE, GameConstants.ENEMY_SPRITE_FLIP_H, sprite.centered])
 	
 	# 歩行スプライトを読み込み
 	for sprite_path in GameConstants.ENEMY_WALK_SPRITES:

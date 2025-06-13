@@ -94,6 +94,7 @@ func _setup_weapon() -> void:
 		if weapon_texture:
 			weapon_sprite.texture = weapon_texture
 			weapon_sprite.scale = Vector2(GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_SCALE)
+			weapon_sprite.flip_h = true  # 剣の刃を正しい方向に向ける
 			
 			# 剣の柄（画像の中央下）をプレイヤーの腰の位置に固定
 			var texture_size = weapon_texture.get_size()
@@ -203,7 +204,7 @@ func _update_hp_bar_position() -> void:
 	if not hp_bar:
 		return
 	
-	var hp_bar_offset = UIPositionHelper.calculate_hp_bar_position(sprite)
+	var hp_bar_offset = UIPositionHelper.calculate_hp_bar_position(sprite, "Player")
 	hp_bar.position = hp_bar_offset
 	_log_debug("HP bar position updated: %s" % hp_bar_offset)
 
