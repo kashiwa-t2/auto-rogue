@@ -77,8 +77,29 @@ func _end_battle_behavior() -> void:
 
 ## 左方向への移動
 func _move_toward_target(delta: float) -> void:
-	var movement = Vector2(-GameConstants.ENEMY_WALK_SPEED * delta, 0)
+	# ScrollManagerから現在のスクロール速度を取得（戦闘時は0、通常時は100）
+	var scroll_speed = 0.0
+	var main_scene = get_node_or_null("/root/MainScene")
+	if main_scene and "scroll_manager" in main_scene:
+		var scroll_manager = main_scene.scroll_manager
+		if scroll_manager and scroll_manager.has_method("get_current_scroll_speed"):
+			scroll_speed = scroll_manager.get_current_scroll_speed()
+		else:
+			scroll_speed = 0.0  # フォールバック：スクロール停止とみなす
+	else:
+		# フォールバック：スクロール停止とみなす
+		scroll_speed = 0.0
+	
+	# 目標相対速度（見た目の速度）を一定に保つ
+	var target_relative_speed = GameConstants.ENEMY_RELATIVE_SPEED  # 常に一定の相対速度を維持
+	# 敵の絶対速度 = 目標相対速度 + 背景スクロール速度
+	var absolute_speed = target_relative_speed + scroll_speed
+	var movement = Vector2(-absolute_speed * delta, 0)
 	position += movement
+	
+	# デバッグログ（戦闘状態変化時のみ）
+	if is_in_battle:
+		_log_debug("Enemy movement - Scroll speed: %f, Absolute speed: %f, In battle: %s" % [scroll_speed, absolute_speed, is_in_battle])
 	
 	# 目標位置に到達したかチェック
 	if position.x <= GameConstants.ENEMY_TARGET_X:

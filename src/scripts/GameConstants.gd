@@ -62,6 +62,7 @@ const PLAYER_DEFAULT_POSITION: Vector2 = Vector2(150, GROUND_Y_POSITION - GROUND
 # スクロール設定
 const DEFAULT_SCROLL_SPEED: float = 100.0  # ピクセル/秒
 const BACKGROUND_SCROLL_SPEED: float = DEFAULT_SCROLL_SPEED
+const GROUND_SCROLL_SPEED: float = DEFAULT_SCROLL_SPEED
 
 # 背景画像パス
 const BACKGROUND_TILE_PATHS: Array[String] = [
@@ -82,7 +83,7 @@ const PLAYER_TRAVEL_SPEED: float = 2.0  # メートル/秒
 # =============================================================================
 # 基本設定
 const ENEMY_SPRITE_SCALE: float = 3.0
-const ENEMY_WALK_SPEED: float = 100.0  # ピクセル/秒
+const ENEMY_RELATIVE_SPEED: float = 50.0  # ピクセル/秒（背景に対する相対速度）
 
 # アニメーション設定
 const ENEMY_WALK_SPRITES: Array[String] = [

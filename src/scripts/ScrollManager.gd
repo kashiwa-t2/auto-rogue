@@ -68,6 +68,15 @@ func reset_all_scrollers() -> void:
 			scroller.reset_scroll()
 	_log_debug("Reset all scrollers")
 
+## 現在のスクロール速度を取得
+func get_current_scroll_speed() -> float:
+	if scrollers.size() > 0 and scrollers[0] and is_instance_valid(scrollers[0]):
+		# スクロールが実際に動いている場合のみ速度を返す
+		if scrollers[0].is_scroll_active():
+			return scrollers[0].get_scroll_speed()
+		else:
+			return 0.0
+	return GameConstants.GROUND_SCROLL_SPEED
 
 ## 特定のスクローラーを名前で検索
 func get_scroller_by_name(scroller_name: String) -> ScrollerBase:
