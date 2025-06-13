@@ -51,8 +51,8 @@ func _ready():
 	_log_debug("EnemyBase initialized at position: %s, type: %s, encounter distance: %f" % [position, EnemyType.keys()[enemy_type], encounter_distance])
 
 func _physics_process(delta):
-	if is_walking and not is_in_battle:
-		_move_toward_target(delta)
+	# 敵は常に背景との相対速度で移動（戦闘中でも相対的に移動）
+	_move_toward_target(delta)
 
 ## 敵の初期設定（派生クラスでオーバーライド）
 func _setup_enemy() -> void:
@@ -109,8 +109,15 @@ func _move_toward_target(delta: float) -> void:
 		# フォールバック：スクロール停止とみなす
 		scroll_speed = 0.0
 	
-	# 目標相対速度（見た目の速度）を一定に保つ
-	var target_relative_speed = GameConstants.ENEMY_RELATIVE_SPEED  # 常に一定の相対速度を維持
+	# 戦闘状態に応じて相対速度を調整
+	var target_relative_speed: float
+	if is_in_battle:
+		# 戦闘中は背景と同じ速度で相対的に止まる（相対速度0）
+		target_relative_speed = 0.0
+	else:
+		# 通常移動時は設定された相対速度
+		target_relative_speed = GameConstants.ENEMY_RELATIVE_SPEED
+	
 	# 敵の絶対速度 = 目標相対速度 + 背景スクロール速度
 	var absolute_speed = target_relative_speed + scroll_speed
 	var movement = Vector2(-absolute_speed * delta, 0)
@@ -118,7 +125,7 @@ func _move_toward_target(delta: float) -> void:
 	
 	# デバッグログ（戦闘状態変化時のみ）
 	if is_in_battle:
-		_log_debug("Enemy movement - Scroll speed: %f, Absolute speed: %f, In battle: %s" % [scroll_speed, absolute_speed, is_in_battle])
+		_log_debug("Enemy movement - Scroll: %f, Relative: %f, Absolute: %f, Battle: %s" % [scroll_speed, target_relative_speed, absolute_speed, is_in_battle])
 	
 	# 目標位置に到達したかチェック
 	if position.x <= GameConstants.ENEMY_TARGET_X:

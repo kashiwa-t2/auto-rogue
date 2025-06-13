@@ -131,13 +131,29 @@ func _move_toward_target(delta: float) -> void:
 		# フォールバック：スクロール停止とみなす
 		scroll_speed = 0.0
 	
-	# 魔法使い専用の相対速度を使用
-	var target_relative_speed = GameConstants.MAGE_RELATIVE_SPEED  # 40.0
+	# 戦闘状態に応じて相対速度を調整
+	var target_relative_speed: float
+	if is_in_battle:
+		# 戦闘中（接近・攻撃状態）は背景と同じ速度で相対的に止まる（相対速度0）
+		target_relative_speed = 0.0
+	else:
+		# 通常移動時は魔法使い専用の相対速度
+		target_relative_speed = GameConstants.MAGE_RELATIVE_SPEED  # 40.0
+	
 	# 敵の絶対速度 = 目標相対速度 + 背景スクロール速度
 	var absolute_speed = target_relative_speed + scroll_speed
 	var movement = Vector2(-absolute_speed * delta, 0)
 	position += movement
 	
+	# デバッグログ（戦闘状態時）
+	if is_in_battle:
+		_log_debug("Mage movement - Scroll: %f, Relative: %f, Absolute: %f, Battle: %s" % [scroll_speed, target_relative_speed, absolute_speed, is_in_battle])
+	
 	# 目標位置に到達したかチェック
 	if position.x <= GameConstants.ENEMY_TARGET_X:
 		_on_reached_target()
+
+## デバッグログ出力
+func _log_debug(message: String) -> void:
+	if GameConstants.DEBUG_LOG_ENABLED:
+		print("[MageEnemy] %s" % message)

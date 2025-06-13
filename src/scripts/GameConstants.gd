@@ -55,6 +55,7 @@ const PLAYER_WEAPON_INITIAL_ROTATION: float = 30.0  # 武器の初期回転角�
 # 攻撃設定
 const PLAYER_ATTACK_DURATION: float = 0.5  # 攻撃アニメーション時間（秒）
 const PLAYER_ATTACK_ROTATION_ANGLE: float = 70.0  # 剣を振る角度（度）- 適度な振り幅
+const PLAYER_ATTACK_RANGE: float = 80.0  # プレイヤーの攻撃射程（ピクセル）
 
 # =============================================================================
 # 地面・スクロール設定
@@ -198,7 +199,7 @@ const COIN_DROP_RANDOM_BONUS: int = 10  # ランダムボーナス範囲（0〜1
 # =============================================================================
 # 回復薬システム設定
 # =============================================================================
-const HEALTH_POTION_DROP_CHANCE: float = 0.2  # 20%の確率でドロップ
+const HEALTH_POTION_DROP_CHANCE: float = 0.8  # 20%の確率でドロップ
 const HEALTH_POTION_HEAL_AMOUNT: int = 20  # 回復量
 const HEALTH_POTION_SPRITE: String = "res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0114.png"  # ポーション画像
 const HEALTH_POTION_SCALE: float = 3.0  # ポーションのスケール
