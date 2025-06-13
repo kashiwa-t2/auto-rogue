@@ -12,6 +12,7 @@ class_name DamageText
 
 var damage_amount: int = 0
 var float_tween: Tween
+var is_player_damage: bool = true
 
 func _ready():
 	# ラベルの初期設定
@@ -23,6 +24,7 @@ func _ready():
 ## ダメージテキストの初期化と表示開始
 func initialize_damage_text(damage: int, start_position: Vector2, is_player_damage: bool = true) -> void:
 	damage_amount = damage
+	self.is_player_damage = is_player_damage
 	text = str(damage)
 	position = start_position
 	
@@ -58,8 +60,20 @@ func _start_float_animation() -> void:
 	
 	# 位置アニメーション（上に浮上）
 	var start_pos = position
+	
+	# プレイヤーと敵でダメージテキストの横移動方向を分ける
+	var random_x = 0.0
+	if text.begins_with("+"):  # 回復テキストは従来通り両方向に移動
+		random_x = randf_range(-GameConstants.DAMAGE_TEXT_FLOAT_RANDOM_X, GameConstants.DAMAGE_TEXT_FLOAT_RANDOM_X)
+	elif is_player_damage:
+		# プレイヤーのダメージは左側のみ（右側にいかない）
+		random_x = randf_range(-GameConstants.DAMAGE_TEXT_FLOAT_RANDOM_X, 0)
+	else:
+		# 敵のダメージは右側のみ（左側にいかない）
+		random_x = randf_range(0, GameConstants.DAMAGE_TEXT_FLOAT_RANDOM_X)
+	
 	var end_pos = start_pos + Vector2(
-		randf_range(-GameConstants.DAMAGE_TEXT_FLOAT_RANDOM_X, GameConstants.DAMAGE_TEXT_FLOAT_RANDOM_X),
+		random_x,
 		-GameConstants.DAMAGE_TEXT_FLOAT_HEIGHT
 	)
 	float_tween.tween_property(self, "position", end_pos, GameConstants.DAMAGE_TEXT_DURATION)

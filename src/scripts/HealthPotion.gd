@@ -35,9 +35,6 @@ func _ready():
 	initial_position = global_position
 	spawn_position = global_position
 	
-	# 即座に回復テキストを表示
-	_create_heal_text()
-	
 	_log_debug("HealthPotion visual effect created at position: %s with heal amount: %d" % [global_position, heal_amount])
 
 func _setup_sprite() -> void:
@@ -85,7 +82,9 @@ func _draw_value_text() -> void:
 	# ポーションのサイズとスケールを考慮して位置を計算
 	var potion_size = Vector2(16, 16)  # tile_0114.pngの元サイズ
 	var scaled_size = potion_size * GameConstants.HEALTH_POTION_SCALE  # 実際の表示サイズ
-	var text_x = scaled_size.x / 2 + 5  # ポーションの右端から適切な位置（フォント32px対応）
+	
+	# テキストをポーションアイコンの右側に配置（元の配置に戻す）
+	var text_x = scaled_size.x / 2 + 5  # ポーションの右端から適切な位置
 	
 	# フォントメトリクスを使って正確な中央配置を計算
 	var font_ascent = text_font.get_ascent(font_size)
@@ -111,69 +110,19 @@ func _update_float_animation(delta: float) -> void:
 	"""浮遊アニメーションの更新"""
 	float_time += delta * GameConstants.HEALTH_POTION_FLOAT_SPEED
 	var float_offset = sin(float_time) * GameConstants.HEALTH_POTION_FLOAT_HEIGHT
-	position.y = spawn_position.y + float_offset
+	
+	# ポーション全体（アイコン+テキスト）をコインと重ならない位置に配置
+	var base_x = spawn_position.x  # 横位置はそのまま
+	var base_y = spawn_position.y + float_offset - 40  # 上側に40px移動してコインパネルと分離
+	
+	position = Vector2(base_x, base_y)
 
 func _on_disappear_timer_timeout() -> void:
 	"""自動消失時間経過時の処理"""
 	_log_debug("Health potion visual effect lifetime expired, removing from scene")
 	_remove_potion()
 
-func _create_heal_text() -> void:
-	"""回復量表示テキストを生成"""
-	# Labelを直接作成して回復量を表示
-	var heal_text_instance = Label.new()
-	
-	# 親シーンに追加（MainSceneを想定）
-	var main_scene = get_tree().get_first_node_in_group("main_scene")
-	if not main_scene:
-		# フォールバック: 現在のシーンのルートに追加
-		get_tree().current_scene.add_child(heal_text_instance)
-	else:
-		main_scene.add_child(heal_text_instance)
-	
-	# 回復量テキストの設定
-	var text_position = global_position + Vector2(0, -20)  # ポーション位置より少し上
-	heal_text_instance.text = "+%d" % heal_amount
-	heal_text_instance.position = text_position
-	
-	# 回復用のスタイル設定
-	heal_text_instance.add_theme_font_size_override("font_size", 32)
-	heal_text_instance.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2, 1.0))  # 緑色
-	heal_text_instance.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	heal_text_instance.add_theme_constant_override("shadow_offset_x", 2)
-	heal_text_instance.add_theme_constant_override("shadow_offset_y", 2)
-	
-	# 回復テキスト用のアニメーション開始
-	_start_heal_text_animation(heal_text_instance)
-	
-	_log_debug("Heal text created showing +%d" % heal_amount)
 
-func _start_heal_text_animation(heal_text: Label) -> void:
-	"""回復テキストのアニメーション"""
-	var tween = create_tween()
-	tween.set_parallel(true)
-	
-	# 初期設定
-	heal_text.modulate.a = 1.0
-	heal_text.scale = Vector2.ONE
-	
-	# 位置アニメーション（上に浮上）
-	var start_pos = heal_text.position
-	var end_pos = start_pos + Vector2(
-		randf_range(-20, 20),  # 少し横にランダム移動
-		-60  # 上に浮上
-	)
-	tween.tween_property(heal_text, "position", end_pos, 1.5)
-	
-	# フェードアウトアニメーション
-	tween.tween_property(heal_text, "modulate:a", 0.0, 1.2)
-	
-	# スケールアニメーション（少し拡大してから縮小）
-	tween.tween_property(heal_text, "scale", Vector2(1.3, 1.3), 0.4)
-	tween.tween_property(heal_text, "scale", Vector2(0.9, 0.9), 1.1)
-	
-	# アニメーション完了時に削除
-	tween.finished.connect(func(): heal_text.queue_free())
 
 func _remove_potion() -> void:
 	"""回復薬をシーンから削除"""
