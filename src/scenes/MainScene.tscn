@@ -219,33 +219,49 @@ text = "0"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="UpgradeContainer" type="GridContainer" parent="UIArea/UpgradeUI"]
+[node name="UpgradeScrollContainer" type="ScrollContainer" parent="UIArea/UpgradeUI"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -345.0
-offset_top = -235.0
-offset_right = 345.0
-offset_bottom = 235.0
+offset_left = -360.0
+offset_top = -300.0
+offset_right = 360.0
+offset_bottom = 350.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="UpgradeContainer" type="GridContainer" parent="UIArea/UpgradeUI/UpgradeScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
 columns = 2
 theme_override_constants/h_separation = 30
 theme_override_constants/v_separation = 30
-[node name="CharacterUpgrade" parent="UIArea/UpgradeUI/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+[node name="CharacterUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
 
-[node name="WeaponUpgrade" parent="UIArea/UpgradeUI/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+[node name="WeaponUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
 
-[node name="AttackSpeedUpgrade" parent="UIArea/UpgradeUI/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+[node name="AttackSpeedUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
 
-[node name="PotionEffectUpgrade" parent="UIArea/UpgradeUI/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+[node name="PotionEffectUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
+
+[node name="RedUnlockUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+layout_mode = 2
+
+[node name="RedCharacterUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+layout_mode = 2
+visible = false
+
+[node name="RedWeaponUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+layout_mode = 2
+visible = false
+
 [node name="GameOverScreen" type="Control" parent="."]
 visible = false
 layout_mode = 1

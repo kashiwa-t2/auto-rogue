@@ -50,6 +50,8 @@ signal enemy_died()
 signal enemy_attacked_player(damage: int)
 
 func _ready():
+	# 敵グループに追加
+	add_to_group("enemy")
 	initial_position = position
 	_setup_enemy()
 	_setup_level_system()
@@ -110,8 +112,8 @@ func _update_level_label_position() -> void:
 	if level_label and hp_bar:
 		# HPバーの位置を基準にレベル表示を配置
 		var hp_bar_position = hp_bar.position
-		# 間隔を狭める: 25px → 18px
-		var level_offset = Vector2(0, -18)  # HPバーの18px上に配置
+		# 間隔を調整: 18px → 21px（HPバーと重ならないように）
+		var level_offset = Vector2(0, -21)  # HPバーの21px上に配置
 		level_label.position = hp_bar_position + level_offset
 		_log_debug("Level label positioned at: %s" % level_label.position)
 

@@ -187,7 +187,9 @@ func _update_float_animation(delta: float) -> void:
 	"""コインの浮遊アニメーション"""
 	float_phase += delta * GameConstants.COIN_FLOAT_SPEED
 	var float_offset = sin(float_phase) * GameConstants.COIN_FLOAT_HEIGHT
-	position.y = spawn_position.y + float_offset
+	# コイン全体をレベル表示より上に配置（ポーションより40px下）
+	var base_y = spawn_position.y + float_offset - 40  # 上側に40px移動
+	position = Vector2(spawn_position.x, base_y)
 
 ## アニメーションフレーム切り替え
 func _on_animation_timer_timeout() -> void:

@@ -157,10 +157,10 @@ const ENEMY_MAGE_ATTACK_DAMAGE: int = 18  # 魔法使い敵の攻撃力
 const ENEMY_BOSS_ATTACK_DAMAGE: int = 40
 
 # 敵HP設定
-const ENEMY_BASIC_HP: int = 200
+const ENEMY_BASIC_HP: int = 10
 const ENEMY_FAST_HP: int = 30
 const ENEMY_STRONG_HP: int = 80
-const ENEMY_MAGE_HP: int = 180  # 魔法使い敵のHP
+const ENEMY_MAGE_HP: int = 10  # 魔法使い敵のHP
 const ENEMY_BOSS_HP: int = 200
 
 # HPバー表示設定
@@ -193,7 +193,7 @@ const COIN_FLOAT_HEIGHT: float = 8.0  # 浮遊の上下幅（ピクセル）
 const COIN_COLLECTION_RADIUS: float = 25.0  # プレイヤーとの収集判定距離（ピクセル）
 const COIN_COLLECTION_DURATION: float = 0.6  # プレイヤーに向かう移動時間（秒）
 const COIN_COLLECTION_OFFSET: Vector2 = Vector2(0, -15)  # プレイヤー中心からのオフセット
-const COIN_DROP_BASE_VALUE: int = 10  # 基本コイン価値
+const COIN_DROP_BASE_VALUE: int = 1000  # 基本コイン価値
 const COIN_DROP_RANDOM_BONUS: int = 10  # ランダムボーナス範囲（0〜10）
 
 # =============================================================================

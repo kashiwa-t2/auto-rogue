@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://blue_magic_bullet_scene"]
+
+[ext_resource type="Script" path="res://src/scripts/BlueMagicBullet.gd" id="1_blue_magic_bullet_script"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_blue_magic_bullet"]
+radius = 8.0
+
+[node name="BlueMagicBullet" type="Area2D"]
+script = ExtResource("1_blue_magic_bullet_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_blue_magic_bullet")

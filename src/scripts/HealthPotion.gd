@@ -51,12 +51,12 @@ func _setup_sprite() -> void:
 func _setup_disappear_timer() -> void:
 	"""自動消失タイマーの設定"""
 	disappear_timer = Timer.new()
-	disappear_timer.wait_time = GameConstants.HEALTH_POTION_LIFETIME
+	disappear_timer.wait_time = 2.0  # コインと同じ2秒に統一
 	disappear_timer.one_shot = true
 	disappear_timer.timeout.connect(_on_disappear_timer_timeout)
 	add_child(disappear_timer)
 	disappear_timer.start()
-	_log_debug("Disappear timer started: %f seconds" % GameConstants.HEALTH_POTION_LIFETIME)
+	_log_debug("Disappear timer started: 2.0 seconds")
 
 ## テキスト描画フォントの設定
 func _setup_text_font() -> void:
@@ -111,9 +111,9 @@ func _update_float_animation(delta: float) -> void:
 	float_time += delta * GameConstants.HEALTH_POTION_FLOAT_SPEED
 	var float_offset = sin(float_time) * GameConstants.HEALTH_POTION_FLOAT_HEIGHT
 	
-	# ポーション全体（アイコン+テキスト）をコインと重ならない位置に配置
+	# ポーション全体（アイコン+テキスト）をレベル表示より上に配置
 	var base_x = spawn_position.x  # 横位置はそのまま
-	var base_y = spawn_position.y + float_offset - 40  # 上側に40px移動してコインパネルと分離
+	var base_y = spawn_position.y + float_offset - 80  # 上側に80px移動してレベル表示より上に配置
 	
 	position = Vector2(base_x, base_y)
 

@@ -1,7 +1,7 @@
 extends CharacterBody2D
 class_name Player
 
-## プレイヤーキャラクターの制御クラス
+## GreenCharacter (みどりくん) の制御クラス
 ## 歩行アニメーション、移動、位置リセット機能を提供
 
 @export var idle_bob_speed: float = GameConstants.PLAYER_IDLE_BOB_SPEED
@@ -45,14 +45,14 @@ signal player_died()
 signal coin_collected(amount: int, total: int)
 
 func _ready():
-	# プレイヤーグループに追加
+	# GreenCharacter (みどりくん) グループに追加
 	add_to_group("player")
 	initial_position = position
 	_setup_walk_animation()
 	_setup_weapon()
 	_setup_hp_system()
 	_initialize_player_stats()
-	_log_debug("Player initialized at position: %s" % position)
+	_log_debug("GreenCharacter (みどりくん) initialized at position: %s" % position)
 
 func _physics_process(delta):
 	# 地面の上を歩くため浮遊アニメーションは停止
@@ -127,9 +127,9 @@ func _setup_hp_system() -> void:
 	else:
 		_log_error("HP bar node not found")
 
-## プレイヤーステータスの初期化
+## GreenCharacter (みどりくん) ステータスの初期化
 func _initialize_player_stats() -> void:
-	"""プレイヤーのステータスをPlayerStatsから取得"""
+	"""GreenCharacter (みどりくん) のステータスをPlayerStatsから取得"""
 	max_hp = PlayerStats.get_max_hp()
 	current_hp = max_hp
 	attack_damage = PlayerStats.get_attack_damage()
@@ -138,26 +138,26 @@ func _initialize_player_stats() -> void:
 	if hp_bar:
 		hp_bar.initialize_hp(current_hp, max_hp)
 	
-	_log_debug("Player stats initialized - HP: %d/%d, Attack: %d" % [current_hp, max_hp, attack_damage])
+	_log_debug("GreenCharacter (みどりくん) stats initialized - HP: %d/%d, Attack: %d" % [current_hp, max_hp, attack_damage])
 
 ## ダメージを受ける
 func take_damage(damage: int) -> void:
-	"""プレイヤーがダメージを受ける"""
+	"""GreenCharacter (みどりくん) がダメージを受ける"""
 	if hp_bar:
 		hp_bar.take_damage(damage)
 		current_hp = hp_bar.get_current_hp()
-		_log_debug("Player took %d damage, HP: %d/%d" % [damage, current_hp, max_hp])
+		_log_debug("GreenCharacter (みどりくん) took %d damage, HP: %d/%d" % [damage, current_hp, max_hp])
 	
 	# ダメージテキストを表示
 	_show_damage_text(damage)
 
 ## HPを回復
 func heal(amount: int) -> void:
-	"""プレイヤーのHPを回復"""
+	"""GreenCharacter (みどりくん) のHPを回復"""
 	if hp_bar:
 		hp_bar.heal(amount)
 		current_hp = hp_bar.get_current_hp()
-		_log_debug("Player healed %d HP, HP: %d/%d" % [amount, current_hp, max_hp])
+		_log_debug("GreenCharacter (みどりくん) healed %d HP, HP: %d/%d" % [amount, current_hp, max_hp])
 
 ## HP変更イベントハンドラー
 func _on_hp_changed(new_hp: int, maximum_hp: int) -> void:
@@ -168,7 +168,7 @@ func _on_hp_changed(new_hp: int, maximum_hp: int) -> void:
 ## HP枯渇イベントハンドラー
 func _on_hp_depleted() -> void:
 	"""HPが0になった時の処理"""
-	_log_debug("Player died!")
+	_log_debug("GreenCharacter (みどりくん) died!")
 	player_died.emit()
 
 ## 現在のHP取得
@@ -185,7 +185,7 @@ func is_alive() -> bool:
 
 ## ダメージテキストの表示
 func _show_damage_text(damage: int) -> void:
-	"""プレイヤーの上にダメージ数値をアニメーション付きで表示"""
+	"""GreenCharacter (みどりくん) の上にダメージ数値をアニメーション付きで表示"""
 	# DamageTextクラスのインスタンスを作成
 	var damage_text = preload("res://src/scripts/DamageText.gd").new()
 	
@@ -196,7 +196,7 @@ func _show_damage_text(damage: int) -> void:
 	var parent = get_parent()
 	if parent:
 		parent.add_child(damage_text)
-		damage_text.initialize_damage_text(damage, text_position, true)  # プレイヤーダメージ = 白色
+		damage_text.initialize_damage_text(damage, text_position, true)  # GreenCharacterダメージ = 白色
 
 ## HPバー位置の更新
 func _update_hp_bar_position() -> void:
@@ -223,7 +223,7 @@ func get_total_coins() -> int:
 
 ## PlayerStatsからステータスを更新
 func update_stats_from_player_stats() -> void:
-	"""PlayerStatsシングルトンから最新のステータスを取得して更新"""
+	"""PlayerStatsシングルトンから最新のGreenCharacter (みどりくん) ステータスを取得して更新"""
 	# 最大HPを更新
 	max_hp = PlayerStats.get_max_hp()
 	# 現在HPが最大HPを超える場合は調整
@@ -238,12 +238,12 @@ func update_stats_from_player_stats() -> void:
 	
 	# HPバーを更新
 	if hp_bar:
-		hp_bar.update_hp(current_hp, max_hp)
+		hp_bar.initialize_hp(current_hp, max_hp)
 	
 	# HPシグナルを発火
 	hp_changed.emit(current_hp, max_hp)
 	
-	_log_debug("Stats updated from PlayerStats - HP: %d/%d, Attack: %d, Coins: %d" % [current_hp, max_hp, attack_damage, total_coins])
+	_log_debug("GreenCharacter (みどりくん) stats updated from PlayerStats - HP: %d/%d, Attack: %d, Coins: %d" % [current_hp, max_hp, attack_damage, total_coins])
 
 func _update_idle_animation(delta: float) -> void:
 	"""アイドルアニメーションの更新（位置の浮遊）"""
@@ -270,7 +270,7 @@ func move_to_position(new_pos: Vector2) -> void:
 	initial_position = new_pos
 	time_passed = 0.0
 	position_changed.emit(new_pos)
-	_log_debug("Player moved to: %s" % new_pos)
+	_log_debug("GreenCharacter (みどりくん) moved to: %s" % new_pos)
 
 
 ## 攻撃アニメーション開始
@@ -335,11 +335,11 @@ func _is_valid_position(pos: Vector2) -> bool:
 ## デバッグログ出力
 func _log_debug(message: String) -> void:
 	if GameConstants.DEBUG_LOG_ENABLED:
-		print("[Player] %s" % message)
+		print("[GreenCharacter] %s" % message)
 
 ## エラーログ出力
 func _log_error(message: String) -> void:
-	print("[Player] ERROR: %s" % message)
+	print("[GreenCharacter] ERROR: %s" % message)
 
 ## テクスチャの安全な読み込み
 func _load_texture_safe(path: String) -> Texture2D:

@@ -14,15 +14,12 @@ func _ensure_save_directory():
 		print("[SaveManager] セーブディレクトリを作成しました")
 
 func save_game() -> bool:
-	var save_data = {
-		"coins": PlayerStats.total_coins,
-		"character_level": PlayerStats.character_level,
-		"weapon_level": PlayerStats.weapon_level,
-		"attack_speed_level": PlayerStats.attack_speed_level,
-		"potion_effect_level": PlayerStats.potion_effect_level,
-		"timestamp": Time.get_ticks_msec(),
-		"date": Time.get_datetime_string_from_system()
-	}
+	# PlayerStatsから全ステータスを取得（あかさんデータ含む）
+	var save_data = PlayerStats.save_data()
+	
+	# タイムスタンプ情報を追加
+	save_data["timestamp"] = Time.get_ticks_msec()
+	save_data["date"] = Time.get_datetime_string_from_system()
 	
 	var file_path = _get_save_file_path()
 	var file = FileAccess.open(file_path, FileAccess.WRITE)
@@ -51,25 +48,23 @@ func load_game() -> bool:
 	var save_data = file.get_var()
 	file.close()
 	
-	if save_data == null or not save_data.has_all(["coins", "character_level", "weapon_level"]):
+	# 最低限必要なフィールドのチェック
+	if save_data == null or not save_data.has_all(["total_coins", "character_level", "weapon_level"]):
 		print("[SaveManager] セーブデータが破損しています: ", file_path)
 		return false
 	
-	PlayerStats.total_coins = save_data.coins
-	PlayerStats.character_level = save_data.character_level
-	PlayerStats.weapon_level = save_data.weapon_level
-	
-	# 攻撃速度レベルとポーション効果レベルを読み込み（後方互換性のためデフォルト値設定）
-	PlayerStats.attack_speed_level = save_data.get("attack_speed_level", 1)
-	PlayerStats.potion_effect_level = save_data.get("potion_effect_level", 1)
-	
+	# PlayerStatsの統一ロードメソッドを使用（後方互換性あり）
+	PlayerStats.load_data(save_data)
 	PlayerStats._update_stats()
 	
-	print("[SaveManager] ロード完了 - コイン: ", save_data.coins, 
-		", キャラLv: ", save_data.character_level, 
-		", 武器Lv: ", save_data.weapon_level,
+	print("[SaveManager] ロード完了 - コイン: ", PlayerStats.total_coins, 
+		", キャラLv: ", PlayerStats.character_level, 
+		", 武器Lv: ", PlayerStats.weapon_level,
 		", 攻撃速度Lv: ", PlayerStats.attack_speed_level,
-		", ポーション効果Lv: ", PlayerStats.potion_effect_level)
+		", ポーション効果Lv: ", PlayerStats.potion_effect_level,
+		", あかさん解放: ", PlayerStats.red_character_unlocked,
+		", あかさんLv: ", PlayerStats.red_character_level,
+		", あかさん武器Lv: ", PlayerStats.red_weapon_level)
 	
 	return true
 
