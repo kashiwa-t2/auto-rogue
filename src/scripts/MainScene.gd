@@ -26,6 +26,7 @@ var autosave_timer: Timer
 
 # エネミーシーンの参照
 const BasicEnemyScene = preload("res://src/scenes/BasicEnemy.tscn")
+const MageEnemyScene = preload("res://src/scenes/MageEnemy.tscn")
 
 func _ready():
 	_log_debug("MainScene loaded - Auto Rogue Game Started!")
@@ -155,8 +156,19 @@ func _on_enemy_spawn_timer_timeout() -> void:
 
 ## 敵をスポーンさせる
 func _spawn_enemy() -> void:
-	# 現在は基本敵のみスポーン（将来的に種類を選択可能に）
-	var enemy_instance = BasicEnemyScene.instantiate()
+	# ランダムで敵の種類を決定（70%: Basic, 30%: Mage）
+	var enemy_instance
+	var enemy_type_name = ""
+	
+	if randf() < 0.7:
+		# 基本敵をスポーン
+		enemy_instance = BasicEnemyScene.instantiate()
+		enemy_type_name = "BasicEnemy"
+	else:
+		# 魔法使い敵をスポーン
+		enemy_instance = MageEnemyScene.instantiate()
+		enemy_type_name = "MageEnemy"
+	
 	if enemy_instance:
 		# 画面右端外側から出現、地面上に配置
 		var spawn_position = Vector2(
@@ -176,7 +188,7 @@ func _spawn_enemy() -> void:
 		$PlayArea.add_child(enemy_instance)
 		# アクティブ敵リストに追加
 		active_enemies.append(enemy_instance)
-		_log_debug("BasicEnemy spawned by timer at distance: %d m (Active enemies: %d)" % [int(traveled_distance), active_enemies.size()])
+		_log_debug("%s spawned by timer at distance: %d m (Active enemies: %d)" % [enemy_type_name, int(traveled_distance), active_enemies.size()])
 
 # =============================================================================
 # 複数敵同時攻撃システム（複数敵vs1プレイヤー・攻撃優先順位制御）
@@ -196,8 +208,9 @@ func _check_player_enemy_proximity() -> void:
 			continue  # 既に戦闘中の敵はスキップ
 		
 		var distance = player.position.distance_to(enemy.position)
-		if distance <= GameConstants.ENEMY_ENCOUNTER_DISTANCE:
-			_log_debug("Enemy approaching! Distance: %.1f, threshold: %.1f" % [distance, GameConstants.ENEMY_ENCOUNTER_DISTANCE])
+		var enemy_encounter_distance = enemy.get_encounter_distance()
+		if distance <= enemy_encounter_distance:
+			_log_debug("Enemy approaching! Distance: %.1f, threshold: %.1f" % [distance, enemy_encounter_distance])
 			_add_enemy_to_battle(enemy)
 	
 	# 攻撃ターゲットの更新（戦闘開始前に必須）

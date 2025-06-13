@@ -9,6 +9,7 @@ enum EnemyType {
 	BASIC,      # 基本的な敵
 	FAST,       # 素早い敵
 	STRONG,     # 強い敵
+	MAGE,       # 魔法使い敵（遠距離攻撃）
 	BOSS        # ボス敵
 }
 
@@ -23,6 +24,7 @@ var current_frame: int = 0
 var is_walking: bool = true
 var is_in_battle: bool = false
 var initial_position: Vector2
+var encounter_distance: float = GameConstants.ENEMY_ENCOUNTER_DISTANCE_BASIC  # 接敵距離
 
 # 戦闘関連
 var battle_tween: Tween
@@ -45,7 +47,8 @@ func _ready():
 	initial_position = position
 	_setup_enemy()
 	_setup_hp_system()
-	_log_debug("EnemyBase initialized at position: %s, type: %s" % [position, EnemyType.keys()[enemy_type]])
+	_setup_encounter_distance()
+	_log_debug("EnemyBase initialized at position: %s, type: %s, encounter distance: %f" % [position, EnemyType.keys()[enemy_type], encounter_distance])
 
 func _physics_process(delta):
 	if is_walking and not is_in_battle:
@@ -54,6 +57,22 @@ func _physics_process(delta):
 ## 敵の初期設定（派生クラスでオーバーライド）
 func _setup_enemy() -> void:
 	pass
+
+## 接敵距離の設定
+func _setup_encounter_distance() -> void:
+	"""敵タイプに応じて接敵距離を設定"""
+	match enemy_type:
+		EnemyType.BASIC:
+			encounter_distance = GameConstants.ENEMY_ENCOUNTER_DISTANCE_BASIC
+		EnemyType.FAST:
+			encounter_distance = GameConstants.ENEMY_ENCOUNTER_DISTANCE_FAST
+		EnemyType.STRONG:
+			encounter_distance = GameConstants.ENEMY_ENCOUNTER_DISTANCE_STRONG
+		EnemyType.MAGE:
+			encounter_distance = GameConstants.ENEMY_ENCOUNTER_DISTANCE_MAGE
+		EnemyType.BOSS:
+			encounter_distance = GameConstants.ENEMY_ENCOUNTER_DISTANCE_BOSS
+	_log_debug("Enemy encounter distance set to: %f for type: %s" % [encounter_distance, EnemyType.keys()[enemy_type]])
 
 ## 戦闘状態の設定
 func set_battle_state(in_battle: bool) -> void:
@@ -131,6 +150,10 @@ func _on_walk_animation_timer_timeout():
 func get_current_position() -> Vector2:
 	return position
 
+## 接敵距離の取得
+func get_encounter_distance() -> float:
+	return encounter_distance
+
 ## エネミーの破棄
 func destroy() -> void:
 	is_walking = false
@@ -152,6 +175,8 @@ func _setup_hp_system() -> void:
 			max_hp = GameConstants.ENEMY_FAST_HP
 		EnemyType.STRONG:
 			max_hp = GameConstants.ENEMY_STRONG_HP
+		EnemyType.MAGE:
+			max_hp = GameConstants.ENEMY_MAGE_HP
 		EnemyType.BOSS:
 			max_hp = GameConstants.ENEMY_BOSS_HP
 	

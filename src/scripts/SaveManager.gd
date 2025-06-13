@@ -18,6 +18,8 @@ func save_game() -> bool:
 		"coins": PlayerStats.total_coins,
 		"character_level": PlayerStats.character_level,
 		"weapon_level": PlayerStats.weapon_level,
+		"attack_speed_level": PlayerStats.attack_speed_level,
+		"potion_effect_level": PlayerStats.potion_effect_level,
 		"timestamp": Time.get_ticks_msec(),
 		"date": Time.get_datetime_string_from_system()
 	}
@@ -56,11 +58,18 @@ func load_game() -> bool:
 	PlayerStats.total_coins = save_data.coins
 	PlayerStats.character_level = save_data.character_level
 	PlayerStats.weapon_level = save_data.weapon_level
+	
+	# 攻撃速度レベルとポーション効果レベルを読み込み（後方互換性のためデフォルト値設定）
+	PlayerStats.attack_speed_level = save_data.get("attack_speed_level", 1)
+	PlayerStats.potion_effect_level = save_data.get("potion_effect_level", 1)
+	
 	PlayerStats._update_stats()
 	
 	print("[SaveManager] ロード完了 - コイン: ", save_data.coins, 
 		", キャラLv: ", save_data.character_level, 
-		", 武器Lv: ", save_data.weapon_level)
+		", 武器Lv: ", save_data.weapon_level,
+		", 攻撃速度Lv: ", PlayerStats.attack_speed_level,
+		", ポーション効果Lv: ", PlayerStats.potion_effect_level)
 	
 	return true
 

@@ -93,13 +93,26 @@ const ENEMY_WALK_SPRITES: Array[String] = [
 const ENEMY_ANIMATION_SPEED: float = 4.0  # フレーム/秒
 const ENEMY_SPRITE_FLIP_H: bool = false  # 左右反転（左向きに歩く）
 
+# 魔法使い敵設定
+const MAGE_WALK_SPRITES: Array[String] = [
+	"res://assets/sprites/kenney_pixel-platformer/Tiles/Characters/tile_0013.png",
+	"res://assets/sprites/kenney_pixel-platformer/Tiles/Characters/tile_0014.png"
+]
+const MAGE_RELATIVE_SPEED: float = 40.0  # ピクセル/秒（基本敵より遅い）
+const MAGE_MAGIC_BULLET_SPRITE: String = "res://assets/sprites/ai/magic_bullet_red.png"
+
 # 出現設定
 const ENEMY_SPAWN_INTERVAL: float = 5.0  # 5秒間隔で出現
 const ENEMY_SPAWN_X: float = SCREEN_WIDTH + 50.0  # 画面右端外側
 const ENEMY_TARGET_X: float = -100.0  # 画面左端外側まで歩く
 
 # 戦闘設定
-const ENEMY_ENCOUNTER_DISTANCE: float = 60.0  # 接近判定距離（ピクセル）- 少し離れた位置で戦闘開始
+## 接敵距離設定（敵タイプ別）
+const ENEMY_ENCOUNTER_DISTANCE_BASIC: float = 60.0   # 基本敵の接敵距離
+const ENEMY_ENCOUNTER_DISTANCE_FAST: float = 80.0    # 素早い敵の接敵距離（遠くから接近）
+const ENEMY_ENCOUNTER_DISTANCE_STRONG: float = 50.0  # 強い敵の接敵距離（近くで接敵）
+const ENEMY_ENCOUNTER_DISTANCE_MAGE: float = 300.0   # 魔法使い敵の接敵距離（最も遠距離）
+const ENEMY_ENCOUNTER_DISTANCE_BOSS: float = 100.0   # ボス敵の接敵距離（最も遠くから）
 
 # =============================================================================
 # テスト・デバッグ設定
@@ -129,12 +142,14 @@ const PLAYER_DEFAULT_ATTACK_DAMAGE: int = 20
 const ENEMY_BASIC_ATTACK_DAMAGE: int = 15
 const ENEMY_FAST_ATTACK_DAMAGE: int = 10
 const ENEMY_STRONG_ATTACK_DAMAGE: int = 25
+const ENEMY_MAGE_ATTACK_DAMAGE: int = 18  # 魔法使い敵の攻撃力
 const ENEMY_BOSS_ATTACK_DAMAGE: int = 40
 
 # 敵HP設定
 const ENEMY_BASIC_HP: int = 200
 const ENEMY_FAST_HP: int = 30
 const ENEMY_STRONG_HP: int = 80
+const ENEMY_MAGE_HP: int = 180  # 魔法使い敵のHP
 const ENEMY_BOSS_HP: int = 200
 
 # HPバー表示設定
