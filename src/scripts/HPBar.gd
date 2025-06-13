@@ -100,8 +100,8 @@ func get_hp_ratio() -> float:
 	return float(current_hp) / float(max_hp) if max_hp > 0 else 0.0
 
 ## HPバーの表示/非表示
-func set_visible_hp_bar(visible: bool):
-	visible = visible
+func set_hp_bar_visible(show_bar: bool):
+	visible = show_bar
 
 ## デバッグログ出力
 func _log_debug(message: String) -> void:

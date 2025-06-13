@@ -23,9 +23,10 @@ func _process(delta):
 
 ## 継承クラスで実装する抽象メソッド
 func initialize_scroller() -> void:
-	push_error("ScrollerBase.initialize_scroller() must be implemented by subclass")
+	push_error("ScrollerBase.initialize_scroller() must be implemented by subclass: %s" % get_class())
 
 func get_scroller_name() -> String:
+	push_error("ScrollerBase.get_scroller_name() must be implemented by subclass: %s" % get_class())
 	return "ScrollerBase"
 
 ## 共通のスクロール更新処理

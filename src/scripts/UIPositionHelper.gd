@@ -3,6 +3,12 @@ class_name UIPositionHelper
 
 ## UI要素の位置計算ヘルパークラス
 ## HPバーやダメージテキストの位置を動的に計算
+## 
+## 提供機能:
+## - スプライトサイズ対応の動的位置計算
+## - HPバー・ダメージテキストの最適配置
+## - 画面内判定・境界チェック
+## - 共通ダメージテキスト表示処理
 
 ## スプライトの中央上部位置を計算
 static func calculate_sprite_center_top(sprite: Sprite2D) -> Vector2:

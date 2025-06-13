@@ -1,7 +1,15 @@
 extends Control
 
 ## メインシーン管理クラス
-## プレイヤー制御、複数敵同時攻撃管理、UI管理、スクロール管理、テスト実行を担当
+## ゲームのコア機能を統合管理
+## 
+## 主要責任:
+## - プレイヤー制御とシグナル管理
+## - 複数敵同時攻撃システム（5秒間隔無限出現）
+## - UI管理（距離・ゴールド表示）
+## - スクロール管理（戦闘時停止制御）
+## - オートセーブ（30秒間隔）
+## - 戦闘状態管理（複数敵vs1プレイヤー）
 
 @onready var player: Player = $PlayArea/Player
 @onready var background_scroller: BackgroundScroller = $PlayArea/BackgroundScroller

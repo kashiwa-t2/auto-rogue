@@ -331,6 +331,15 @@ func _is_valid_position(pos: Vector2) -> bool:
 	return pos.x >= 0 and pos.x <= GameConstants.SCREEN_WIDTH and \
 		   pos.y >= 0 and pos.y <= GameConstants.SCREEN_HEIGHT
 
+## デバッグログ出力
+func _log_debug(message: String) -> void:
+	if GameConstants.DEBUG_LOG_ENABLED:
+		print("[Player] %s" % message)
+
+## エラーログ出力
+func _log_error(message: String) -> void:
+	print("[Player] ERROR: %s" % message)
+
 ## テクスチャの安全な読み込み
 func _load_texture_safe(path: String) -> Texture2D:
 	if path.is_empty():
@@ -343,12 +352,3 @@ func _load_texture_safe(path: String) -> Texture2D:
 		return null
 	
 	return texture
-
-## デバッグログ出力
-func _log_debug(message: String) -> void:
-	if GameConstants.DEBUG_LOG_ENABLED:
-		print("[Player] %s" % message)
-
-## エラーログ出力
-func _log_error(message: String) -> void:
-	print("[Player] ERROR: %s" % message)
