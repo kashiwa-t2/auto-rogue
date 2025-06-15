@@ -1,7 +1,7 @@
 extends Control
 
-## メインシーン管理クラス
-## ゲームのコア機能を統合管理
+## メインシーン管理クラス - BattleManagerリファクタリング版
+## ゲームのコア機能を統合管理（BattleManager使用）
 ## 
 ## 主要責任:
 ## - 味方キャラ制御: GreenCharacter(みどりくん) + RedCharacter(あかさん)
@@ -9,7 +9,7 @@ extends Control
 ## - UI管理（距離・ゴールド表示）
 ## - スクロール管理（戦闘時停止制御）
 ## - オートセーブ（30秒間隔）
-## - 戦闘状態管理（複数Enemy vs 味方キャラクター）
+## - 戦闘状態管理はBattleManagerに委譲
 
 @onready var player: Player = $PlayArea/Player  # GreenCharacter (みどりくん)
 @onready var red_character: Node2D = null  # RedCharacter (あかさん) - 解放後に動的追加
@@ -18,25 +18,16 @@ extends Control
 @onready var distance_label: Label = $PlayArea/DistanceLabel
 @onready var gold_label: Label = $PlayArea/GoldUI/GoldLabel
 @onready var game_over_screen: Control = $GameOverScreen
-@onready var upgrade_ui: UpgradeUI = $UIArea/UpgradeUI
+@onready var tab_system: TabSystem = $UIArea/TabSystem
+@onready var upgrade_ui: UpgradeUI = $UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI
+@onready var weapon_ui: WeaponUI = $UIArea/TabSystem/ContentArea/WeaponContent/WeaponUI
 
 var scroll_manager: ScrollManager
+var battle_manager: BattleManager
 var traveled_distance: float = 0.0
-var is_in_battle: bool = false
 
-# 複数敵同時攻撃システム
+# システムタイマー
 var enemy_spawn_timer: Timer
-var active_enemies: Array[EnemyBase] = []          # 全アクティブ敵
-var approaching_enemies: Array[EnemyBase] = []     # 接近中の敵（敵の接敵距離内、プレイヤー攻撃射程外）
-var battle_enemies: Array[EnemyBase] = []          # 戦闘中の敵（プレイヤー攻撃射程内）
-var current_attack_target: EnemyBase = null       # 現在攻撃対象の敵（1体のみ）
-var red_character_attack_target: EnemyBase = null  # あかさんの攻撃対象
-
-# キャラクター戦闘状態管理
-var green_character_in_battle: bool = false
-var red_character_in_battle: bool = false
-
-# オートセーブ
 var autosave_timer: Timer
 
 # エネミーシーンの参照
@@ -47,6 +38,7 @@ const RedCharacterScene = preload("res://src/scenes/RedCharacter.tscn")
 func _ready():
 	_log_debug("MainScene loaded - Auto Rogue Game Started!")
 	_setup_scroll_manager()
+	_setup_battle_manager()
 	_setup_player_signals()
 	_setup_red_character_if_unlocked()
 	_setup_scroll_signals()
@@ -61,11 +53,17 @@ func _ready():
 	SaveManager.autosave()
 	
 	# シーン開始時のフェードイン（SceneTransitionが自動的に処理）
+	
+	# BattleManagerの初期化を完了
+	call_deferred("_on_ready_complete")
 
 func _process(delta):
-	if not is_in_battle:
+	if not battle_manager.is_battle_active():
 		_update_traveled_distance(delta)
-	_check_player_enemy_proximity()
+	battle_manager.update_battle_proximity()
+	
+	# RedCharacterの独立戦闘開始チェック（GreenCharacterより射程が長いため）
+	_check_red_character_combat_start()
 
 func _input(event):
 	if event is InputEventKey and event.pressed:
@@ -86,6 +84,27 @@ func _setup_scroll_manager() -> void:
 	# シグナル接続
 	scroll_manager.scroll_speed_changed.connect(_on_scroll_speed_changed)
 	_log_debug("ScrollManager initialized with %d scrollers" % scroll_manager.get_scroller_count())
+
+## バトル管理の初期設定
+func _setup_battle_manager() -> void:
+	battle_manager = BattleManager.new()
+	add_child(battle_manager)
+	
+	# BattleManagerシグナル接続
+	battle_manager.battle_started.connect(_on_battle_started)
+	battle_manager.battle_ended.connect(_on_battle_ended)
+	battle_manager.enemy_added_to_approach.connect(_on_enemy_added_to_approach)
+	battle_manager.enemy_added_to_battle.connect(_on_enemy_added_to_battle)
+	battle_manager.enemy_removed_from_battle.connect(_on_enemy_removed_from_battle)
+	battle_manager.target_changed.connect(_on_target_changed)
+	
+	_log_debug("BattleManager initialized")
+
+## BattleManagerへのキャラクター初期化を待つ
+func _on_ready_complete() -> void:
+	"""BattleManagerにキャラクター参照を設定"""
+	battle_manager.initialize(player, red_character, scroll_manager)
+	_log_debug("BattleManager initialized with characters")
 
 ## プレイヤーシグナルの設定
 func _setup_player_signals() -> void:
@@ -135,6 +154,10 @@ func _spawn_red_character() -> void:
 		# ステータスを最新のPlayerStatsから更新（攻撃範囲600など）
 		red_character.update_stats_from_player_stats()
 		
+		# BattleManagerにred_character参照を更新
+		if battle_manager:
+			battle_manager.update_red_character(red_character)
+		
 		_log_debug("Red character spawned at position: %s" % red_position)
 	else:
 		_log_error("Failed to instantiate RedCharacter")
@@ -164,11 +187,6 @@ func _setup_scroll_signals() -> void:
 ## 距離トラッキングの設定
 func _setup_distance_tracking() -> void:
 	traveled_distance = 0.0
-	active_enemies.clear()
-	approaching_enemies.clear()
-	battle_enemies.clear()
-	current_attack_target = null
-	is_in_battle = false
 	_update_distance_display()
 	_log_debug("Distance tracking initialized")
 
@@ -221,7 +239,7 @@ func _update_gold_display() -> void:
 func _on_enemy_spawn_timer_timeout() -> void:
 	"""5秒間隔で敵を自動出現（戦闘状態に関係なく永続的）"""
 	_spawn_enemy()
-	_log_debug("Enemy spawned by timer (Active enemies: %d)" % active_enemies.size())
+	_log_debug("Enemy spawned by timer")
 
 ## 敵をスポーンさせる
 func _spawn_enemy() -> void:
@@ -255,130 +273,52 @@ func _spawn_enemy() -> void:
 		
 		# PlayAreaに追加
 		$PlayArea.add_child(enemy_instance)
-		# アクティブ敵リストに追加
-		active_enemies.append(enemy_instance)
-		_log_debug("%s spawned by timer at distance: %d m (Active enemies: %d)" % [enemy_type_name, int(traveled_distance), active_enemies.size()])
+		# バトルマネージャーにアクティブ敵として追加
+		battle_manager.add_active_enemy(enemy_instance)
+		_log_debug("%s spawned by timer at distance: %d m" % [enemy_type_name, int(traveled_distance)])
 
 # =============================================================================
-# 複数敵同時攻撃システム（複数敵vs1プレイヤー・攻撃優先順位制御）
+# BattleManagerシグナルハンドラー
 # =============================================================================
 
-func _check_player_enemy_proximity() -> void:
-	if not player:
-		return
-	
-	# 無効な敵を配列から削除
-	active_enemies = active_enemies.filter(func(enemy): return is_instance_valid(enemy))
-	approaching_enemies = approaching_enemies.filter(func(enemy): return is_instance_valid(enemy))
-	battle_enemies = battle_enemies.filter(func(enemy): return is_instance_valid(enemy))
-	
-	# 敵の距離を2段階で判定（x座標のみ）
-	for enemy in active_enemies:
-		var distance = abs(player.position.x - enemy.position.x)
-		var enemy_encounter_distance = enemy.get_encounter_distance()
-		
-		_log_debug("Green player distance to %s: %.1f (player_pos: %.1f, enemy_pos: %.1f)" % [enemy.name, distance, player.position.x, enemy.position.x])
-		
-		# ステップ1: プレイヤーの攻撃射程内（80px）→ 戦闘状態
-		if distance <= GameConstants.PLAYER_ATTACK_RANGE:
-			if enemy not in battle_enemies:
-				_add_enemy_to_battle(enemy)
-				_log_debug("Green player entered battle with %s at distance %.1f" % [enemy.name, distance])
-				# 接近状態からも削除
-				if enemy in approaching_enemies:
-					approaching_enemies.erase(enemy)
-		
-		# ステップ2: 敵の接敵距離内（例：魔法使い300px）→ 接近状態
-		elif distance <= enemy_encounter_distance:
-			if enemy not in approaching_enemies and enemy not in battle_enemies:
-				_add_enemy_to_approach(enemy)
-				_log_debug("Enemy %s entered approach state at distance %.1f" % [enemy.name, distance])
-	
-	# 攻撃ターゲットの更新（戦闘開始前に必須）
-	_update_attack_target()
-	_update_red_character_attack_target()
-	
-	# 戦闘状態の管理（プレイヤー攻撃射程内の敵がいる場合のみ戦闘状態）
-	_check_character_battle_states()
-	
-	# あかさんの独立戦闘管理（射程300なので先に戦闘開始）
-	if red_character and PlayerStats.red_character_unlocked:
-		_log_debug("Red character battle check: in_battle=%s, is_attacking=%s" % [red_character_in_battle, red_character.is_character_attacking()])
-		if red_character_in_battle and not red_character.is_character_attacking():
-			_log_debug("Starting red character combat FIRST (longer range)")
-			_start_red_character_combat()
-		elif not red_character_in_battle and red_character.is_character_attacking():
-			# 射程外になったら戦闘停止
-			_log_debug("Stopping red character combat (out of range)")
-			red_character.stop_combat()
-	
-	# みどりくんの戦闘開始（近距離80px）
-	if battle_enemies.size() > 0 and not is_in_battle:
-		_start_battle()
-	elif battle_enemies.size() == 0 and is_in_battle:
-		_end_battle()
-
-## 戦闘開始（複数敵同時攻撃）
-func _start_battle() -> void:
-	is_in_battle = true
-	_pause_game_progression()
-	
-	# 攻撃ターゲットが設定されていることを確認
-	if current_attack_target:
-		_log_debug("Battle started with attack target: %s" % current_attack_target)
-	else:
-		_log_debug("WARNING: Battle started but no attack target set!")
-	
+## BattleManagerシグナルハンドラー
+func _on_battle_started() -> void:
+	"""BattleManagerからの戦闘開始通知"""
 	_start_player_attack()
 	
-	# 全ての戦闘中敵に戦闘状態を通知
-	for enemy in battle_enemies:
-		if is_instance_valid(enemy):
-			enemy.set_battle_state(true)
-		
-	# あかさんの戦闘開始
-	if red_character and red_character_in_battle:
+	# あかさんが戦闘状態の場合は戦闘開始
+	if red_character and battle_manager.is_red_character_in_battle():
 		_start_red_character_combat()
 	
-	_log_debug("Battle started! Distance: %d m (Battle enemies: %d, Target: %s)" % [int(traveled_distance), battle_enemies.size(), "SET" if current_attack_target else "NULL"])
+	var target = battle_manager.get_green_character_target()
+	var target_name = target.name if target else "NULL"
+	_log_debug("Battle started! Distance: %d m (Target: %s)" % [int(traveled_distance), target_name])
 
-## 戦闘終了
-func _end_battle() -> void:
-	is_in_battle = false
-	_resume_game_progression()
-	
-	# 戦闘中敵のみ戦闘終了処理（接近中敵は引き続き攻撃状態で相対移動継続）
-	var battle_enemies_count = battle_enemies.size()
-	for enemy in battle_enemies:
-		if is_instance_valid(enemy):
-			# 戦闘終了後は接近状態に戻す（背景と相対的に移動）
-			enemy.set_battle_state(true)  # 接近中の敵は攻撃状態維持
-			_log_debug("Enemy released from battle to approach state")
-	
-	battle_enemies.clear()
-	current_attack_target = null
-	
-	_log_debug("Battle ended! Released %d enemies from battle (Active: %d, Approaching: %d)" % [battle_enemies_count, active_enemies.size(), approaching_enemies.size()])
+func _on_battle_ended() -> void:
+	"""BattleManagerからの戦闘終了通知"""
+	var stats = battle_manager.get_battle_stats()
+	_log_debug("Battle ended! Stats: %s" % stats)
 
-## ゲーム進行の停止（全キャラ戦闘時のみ背景スクロール停止）
-func _pause_game_progression() -> void:
-	# 全キャラクターが戦闘中の場合のみ停止
-	var should_pause = green_character_in_battle
-	if red_character and PlayerStats.red_character_unlocked:
-		should_pause = should_pause and red_character_in_battle
-	
-	if should_pause and scroll_manager:
-		scroll_manager.pause_all_scrollers()
-		_log_debug("Game progression paused - all characters in battle")
-	elif not should_pause:
-		_log_debug("Game progression continues - not all characters in battle")
+func _on_enemy_added_to_approach(enemy: EnemyBase) -> void:
+	"""BattleManagerからの敵接近状態通知"""
+	_log_debug("Enemy entered approach state: %s" % enemy.name)
 
-## ゲーム進行の再開（背景スクロールのみ）
-func _resume_game_progression() -> void:
-	if scroll_manager:
-		scroll_manager.resume_all_scrollers()
-	# 敵の歩行状態はそのまま維持
-	_log_debug("Game progression resumed (background scroll only)")
+func _on_enemy_added_to_battle(enemy: EnemyBase) -> void:
+	"""BattleManagerからの敵戦闘状態通知"""
+	_log_debug("Enemy entered battle state: %s" % enemy.name)
+
+func _on_enemy_removed_from_battle(enemy: EnemyBase) -> void:
+	"""BattleManagerからの敵戦闘離脱通知"""
+	_log_debug("Enemy removed from battle: %s" % enemy.name)
+
+func _on_target_changed(character_type: String, new_target: EnemyBase) -> void:
+	"""BattleManagerからのターゲット変更通知"""
+	var target_name: String
+	if new_target:
+		target_name = new_target.name
+	else:
+		target_name = "None"
+	_log_debug("%s character target changed to: %s" % [character_type, target_name])
 
 ## 敵の戦闘状態変更イベントハンドラー
 func _on_enemy_battle_state_changed(in_battle: bool) -> void:
@@ -396,13 +336,14 @@ func _on_player_attack_started() -> void:
 ## プレイヤー攻撃ヒットイベントハンドラー（実際のダメージタイミング）
 func _on_player_attack_hit() -> void:
 	_log_debug("Player attack hit!")
-	# 現在の攻撃ターゲットにのみダメージを与える
-	if current_attack_target and is_instance_valid(current_attack_target) and is_in_battle:
+	# BattleManagerからターゲットを取得
+	var target = battle_manager.get_green_character_target()
+	if target and is_instance_valid(target) and battle_manager.is_battle_active():
 		# プレイヤーの攻撃射程内かチェック
-		var distance_to_target = abs(player.position.x - current_attack_target.position.x)
+		var distance_to_target = abs(player.position.x - target.position.x)
 		if distance_to_target <= GameConstants.PLAYER_ATTACK_RANGE:
 			var damage = PlayerStats.get_attack_damage()
-			current_attack_target.take_damage(damage)
+			target.take_damage(damage)
 			_log_debug("Player dealt %d damage to target enemy (distance: %.1f)" % [damage, distance_to_target])
 		else:
 			_log_debug("Player attack missed - target too far (distance: %.1f, range: %.1f)" % [distance_to_target, GameConstants.PLAYER_ATTACK_RANGE])
@@ -412,57 +353,39 @@ func _on_player_attack_hit() -> void:
 func _on_player_attack_finished() -> void:
 	_log_debug("Player attack finished")
 	# 戦闘中なら次の攻撃を開始
-	if is_in_battle:
+	if battle_manager.is_battle_active():
 		# 攻撃速度レベルに基づく動的な攻撃間隔
 		var attack_interval = PlayerStats.get_attack_interval()
 		await get_tree().create_timer(attack_interval).timeout
-		if is_in_battle:  # まだ戦闘中かチェック
+		if battle_manager.is_battle_active():  # まだ戦闘中かチェック
 			_start_player_attack()
 			_log_debug("Next attack started with interval: %.2fs" % attack_interval)
 
 ## 敵イベントハンドラー
 func _on_enemy_reached_target(enemy: EnemyBase) -> void:
 	if enemy:
-		_remove_enemy_from_active_list(enemy)
-		_log_debug("Enemy reached target and was removed (Active enemies: %d)" % active_enemies.size())
+		battle_manager.remove_active_enemy(enemy)
+		_log_debug("Enemy reached target and was removed")
 
 func _on_enemy_destroyed(enemy: EnemyBase) -> void:
 	if enemy:
-		_remove_enemy_from_active_list(enemy)
-		_log_debug("Enemy was destroyed (Active enemies: %d)" % active_enemies.size())
+		battle_manager.remove_active_enemy(enemy)
+		_log_debug("Enemy was destroyed")
 
 ## 敵死亡イベントハンドラー
 func _on_enemy_died(enemy: EnemyBase) -> void:
 	_log_debug("Enemy died!")
 	if enemy:
-		_remove_enemy_from_active_list(enemy)
-		# 死亡した敵が現在の攻撃ターゲットの場合、次のターゲットに切り替え
-		if enemy == current_attack_target:
-			_update_attack_target()
-		
-		# 全ての生存敵の歩行状態を強制的に確認・修復
-		_ensure_all_enemies_walking()
-		
-		# 戦闘状態の再評価：戦闘中の敵がいなくなった場合は戦闘終了
-		# そうでない場合は残りの敵の移動状態を確認
-		if battle_enemies.size() == 0:
-			# 戦闘終了処理は_check_player_enemy_proximityで自動実行される
-			_log_debug("No more battle enemies - battle will end")
-		else:
-			# まだ戦闘中の敵がいる場合、戦闘外の敵の移動を再開
-			_resume_non_battle_enemies_movement()
-		
-		_log_debug("Enemy removed from lists (Active: %d, Approaching: %d, Battle: %d)" % [active_enemies.size(), approaching_enemies.size(), battle_enemies.size()])
+		battle_manager.remove_active_enemy(enemy)
+		var stats = battle_manager.get_battle_stats()
+		_log_debug("Enemy removed - Battle stats: %s" % stats)
 
 ## 敵がプレイヤーを攻撃したイベントハンドラー
 func _on_enemy_attacked_player(damage: int, enemy: EnemyBase) -> void:
-	# 接近中・戦闘中の敵からの攻撃は全て受ける
-	if enemy and (enemy in approaching_enemies or enemy in battle_enemies):
-		_log_debug("Enemy attacked player for %d damage (approaching: %s, battle: %s)" % [damage, enemy in approaching_enemies, enemy in battle_enemies])
-		if player and is_instance_valid(player):
-			player.take_damage(damage)
-	else:
-		_log_debug("Non-engaged enemy attack ignored")
+	# 敵が戦闘状態かどうかは敵自身が管理しているので、ここでは単純にダメージを受ける
+	if enemy and player and is_instance_valid(player):
+		player.take_damage(damage)
+		_log_debug("Enemy %s attacked player for %d damage" % [enemy.name, damage])
 
 ## プレイヤー死亡イベントハンドラー
 func _on_player_died() -> void:
@@ -482,8 +405,9 @@ func _on_player_died() -> void:
 ## ゲームオーバー処理
 func _trigger_game_over() -> void:
 	_log_debug("All characters died! Game over.")
-	is_in_battle = false
-	_pause_game_progression()
+	# スクロール停止
+	if scroll_manager:
+		scroll_manager.pause_all_scrollers()
 	
 	# ゲームオーバー画面を表示
 	if game_over_screen:
@@ -555,65 +479,36 @@ func _on_upgrade_completed() -> void:
 	_update_gold_display()
 
 # =============================================================================
-# 複数敵同時攻撃システム - 管理関数
+# レガシー関数（互換性のため保持）
 # =============================================================================
 
-func _remove_enemy_from_active_list(enemy: EnemyBase) -> void:
-	"""敵をアクティブ・接近・戦闘リストから削除"""
-	if enemy in active_enemies:
-		active_enemies.erase(enemy)
-		_log_debug("Enemy removed from active list")
-	if enemy in approaching_enemies:
-		approaching_enemies.erase(enemy)
-		_log_debug("Enemy removed from approaching list")
-	if enemy in battle_enemies:
-		battle_enemies.erase(enemy)
-		_log_debug("Enemy removed from battle list")
-
-func _add_enemy_to_approach(enemy: EnemyBase) -> void:
-	"""敵を接近リストに追加（敵の攻撃開始、背景スクロール継続）"""
-	if enemy not in approaching_enemies:
-		approaching_enemies.append(enemy)
-		# 敵は攻撃状態になり、背景と相対的に移動
-		enemy.set_battle_state(true)
-		_log_debug("Enemy added to approach state (Approaching enemies: %d)" % approaching_enemies.size())
-
-func _add_enemy_to_battle(enemy: EnemyBase) -> void:
-	"""敵を戦闘リストに追加（プレイヤー攻撃開始、背景スクロール停止）"""
-	if enemy not in battle_enemies:
-		battle_enemies.append(enemy)
-		# 新しく追加された敵を即座に戦闘状態に設定（背景と相対的に停止）
-		enemy.set_battle_state(true)
-		_log_debug("Enemy added to battle state (Battle enemies: %d)" % battle_enemies.size())
-
-func _update_attack_target() -> void:
-	"""攻撃ターゲットを更新（先に接近した敵を優先）"""
-	if battle_enemies.size() == 0:
-		current_attack_target = null
+## RedCharacterの独立戦闘開始チェック
+func _check_red_character_combat_start() -> void:
+	"""RedCharacterの戦闘状態をチェックし、必要に応じて戦闘開始"""
+	if not red_character or not is_instance_valid(red_character) or not PlayerStats.red_character_unlocked:
 		return
 	
-	# 現在のターゲットが有効で戦闘中なら維持
-	if current_attack_target and current_attack_target in battle_enemies and is_instance_valid(current_attack_target):
+	# RedCharacterが戦闘状態で、まだ攻撃していない場合
+	if battle_manager.is_red_character_in_battle() and not red_character.is_character_attacking():
+		_start_red_character_combat()
+		_log_debug("RedCharacter combat started independently (longer range)")
+
+## あかさんの戦闘開始
+func _start_red_character_combat() -> void:
+	"""あかさんの戦闘を開始"""
+	if not red_character or not is_instance_valid(red_character):
 		return
 	
-	# 最初の戦闘中敵を新しいターゲットに（先入先攻撃）
-	for enemy in battle_enemies:
-		if is_instance_valid(enemy):
-			current_attack_target = enemy
-			_log_debug("Attack target updated to: Enemy (Battle enemies: %d)" % battle_enemies.size())
-			return
+	# BattleManagerからターゲットを取得
+	var target = battle_manager.get_red_character_target()
 	
-	current_attack_target = null
-
-## 戦闘外の敵の移動を再開
-func _resume_non_battle_enemies_movement() -> void:
-	"""戦闘中でない敵の移動を再開させる（背景との相対移動で自動管理）"""
-	_log_debug("Non-battle enemies will move automatically with relative speed")
-
-## 全ての敵の移動状態を確認・再開
-func _ensure_all_enemies_walking() -> void:
-	"""全ての生存敵の移動状態を確認（背景との相対移動で自動管理）"""
-	_log_debug("All enemies will move automatically with relative speed based on battle state")
+	# ターゲットがいる場合は戦闘開始
+	if target:
+		var distance = abs(red_character.position.x - target.position.x)
+		red_character.start_combat(target)
+		_log_debug("Red character combat started against: %s (distance: %.1f)" % [target.name, distance])
+	else:
+		_log_debug("Red character has no target for combat")
 
 ## イベントハンドラー
 func _on_player_position_changed(new_position: Vector2) -> void:
@@ -630,7 +525,6 @@ func _on_ground_looped() -> void:
 
 func _on_scroll_speed_changed(new_speed: float) -> void:
 	_log_debug("Scroll speed changed to: %f" % new_speed)
-
 
 ## テスト実行
 func _run_player_tests():
@@ -662,7 +556,6 @@ func resume_all_scrolls() -> void:
 	if scroll_manager:
 		scroll_manager.resume_all_scrollers()
 
-
 ## オートセーブタイマーのセットアップ
 func _setup_autosave_timer() -> void:
 	"""オートセーブタイマーの設定"""
@@ -680,89 +573,8 @@ func _on_autosave_timer_timeout() -> void:
 	_log_debug("Autosave executed")
 
 # =============================================================================
-# 複数キャラクター管理システム
+# 複数キャラクター管理システム - BattleManagerに移行済み
 # =============================================================================
-
-## キャラクター戦闘状態のチェック
-func _check_character_battle_states() -> void:
-	""""\u5404キャラクターの戦闘状態をチェックし、全キャラ戦闘時のみ背景停止"""
-	# みどりくんの戦闘状態チェック
-	green_character_in_battle = false
-	if player and is_instance_valid(player):
-		for enemy in battle_enemies:
-			if is_instance_valid(enemy):
-				var distance = abs(player.position.x - enemy.position.x)
-				if distance <= GameConstants.PLAYER_ATTACK_RANGE:
-					green_character_in_battle = true
-					break
-	
-	# あかさんの戦闘状態チェック（独立判定）
-	red_character_in_battle = false
-	if red_character and is_instance_valid(red_character) and PlayerStats.red_character_unlocked:
-		# あかさんは全てのactive_enemiesから射程内の敵を攻撃可能（段階無視）
-		_log_debug("Red character checking %d active enemies (range: %.1f, red_pos: %.1f)" % [active_enemies.size(), red_character.attack_range, red_character.position.x])
-		for enemy in active_enemies:
-			if is_instance_valid(enemy):
-				var distance = abs(red_character.position.x - enemy.position.x)
-				_log_debug("Red character distance to %s: %.1f (enemy_pos: %.1f, red_pos: %.1f)" % [enemy.name, distance, enemy.position.x, red_character.position.x])
-				if distance <= red_character.attack_range:
-					red_character_in_battle = true
-					_log_debug("Red character entering battle with %s!" % enemy.name)
-					break
-				else:
-					_log_debug("Red character NOT in range: %.1f > %.1f" % [distance, red_character.attack_range])
-	
-	# 戦闘状態の更新（全キャラ戦闘時のみ背景停止）
-	var all_characters_in_battle = green_character_in_battle
-	if red_character and PlayerStats.red_character_unlocked:
-		all_characters_in_battle = all_characters_in_battle and red_character_in_battle
-	
-	# 背景スクロール制御（全キャラ戦闘時のみ停止）
-	if all_characters_in_battle and not is_in_battle:
-		_log_debug("All characters in battle - pausing scrolling")
-	elif not all_characters_in_battle and is_in_battle:
-		_log_debug("Not all characters in battle - continuing scrolling")
-
-## あかさんの戦闘開始
-func _start_red_character_combat() -> void:
-	""""\u3042かさんの戦闘を開始"""
-	if not red_character or not is_instance_valid(red_character):
-		return
-	
-	# あかさんの攻撃ターゲットを更新
-	_update_red_character_attack_target()
-	
-	# ターゲットがいる場合は戦闘開始
-	if red_character_attack_target:
-		var distance = abs(red_character.position.x - red_character_attack_target.position.x)
-		red_character.start_combat(red_character_attack_target)
-		_log_debug("Red character combat started against: %s (distance: %.1f)" % [red_character_attack_target.name, distance])
-	else:
-		_log_debug("Red character has no target for combat")
-
-## あかさんの攻撃ターゲット更新
-func _update_red_character_attack_target() -> void:
-	""""\u3042かさんの攻撃ターゲットを更新"""
-	if not red_character or not is_instance_valid(red_character):
-		red_character_attack_target = null
-		return
-	
-	# 現在のターゲットが有効なら維持
-	if red_character_attack_target and is_instance_valid(red_character_attack_target):
-		var distance = abs(red_character.position.x - red_character_attack_target.position.x)
-		if distance <= red_character.attack_range:
-			return
-	
-	# 新しいターゲットを検索（射程内の最初の敵）
-	red_character_attack_target = null
-	# あかさんは全てのactive_enemiesから射程内の敵を攻撃可能（段階無視）
-	for enemy in active_enemies:
-		if is_instance_valid(enemy):
-			var distance = abs(red_character.position.x - enemy.position.x)
-			if distance <= red_character.attack_range:
-				red_character_attack_target = enemy
-				_log_debug("Red character target updated to: %s (distance: %.1f)" % [enemy.name, distance])
-				break
 
 # =============================================================================
 # あかさんイベントハンドラー
@@ -791,8 +603,6 @@ func _on_red_character_died() -> void:
 	# あかさんの戦闘停止
 	if red_character:
 		red_character.stop_combat()
-	red_character_in_battle = false
-	red_character_attack_target = null
 	
 	# みどりくんが生きている場合はゲーム継続
 	if player and is_instance_valid(player) and player.is_alive():
@@ -810,6 +620,13 @@ func _on_red_character_coin_collected(amount: int, total: int) -> void:
 	# PlayerStatsに反映
 	PlayerStats.add_coins(amount)
 	_update_gold_display()
+
+## WeaponSystem取得
+func get_weapon_system() -> WeaponSystem:
+	"""WeaponSystemを取得"""
+	if weapon_ui and weapon_ui.has_method("get_weapon_system"):
+		return weapon_ui.get_weapon_system()
+	return null
 
 ## ログ出力
 func _log_debug(message: String) -> void:

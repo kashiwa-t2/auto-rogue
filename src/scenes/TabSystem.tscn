@@ -1,0 +1,119 @@
+[gd_scene load_steps=7 format=3 uid="uid://bckv2p7cfe4nu"]
+
+[ext_resource type="Script" path="res://src/scripts/TabSystem.gd" id="1_qxqmn"]
+[ext_resource type="Texture2D" uid="uid://d1ykkqubw7qim" path="res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0114.png" id="2_upgrade"]
+[ext_resource type="Texture2D" uid="uid://c8fg8sn0scgyl" path="res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0103.png" id="3_weapon"]
+[ext_resource type="Texture2D" uid="uid://bdphrbbjgnhqr" path="res://assets/sprites/kenney_pixel-platformer/Tiles/tile_0151.png" id="4_inventory"]
+[ext_resource type="Texture2D" uid="uid://b53swl83rj4l3" path="res://assets/sprites/kenney_pixel-platformer/Tiles/tile_0152.png" id="5_quest"]
+[ext_resource type="Texture2D" uid="uid://c3vt4qeqp41kp" path="res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0130.png" id="6_settings"]
+
+[node name="TabSystem" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_qxqmn")
+
+[node name="TabContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -90.0
+offset_right = -20.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 15
+
+[node name="UpgradeTab" type="Button" parent="TabContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(120, 80)
+icon = ExtResource("2_upgrade")
+flat = false
+
+[node name="WeaponTab" type="Button" parent="TabContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(120, 80)
+icon = ExtResource("3_weapon")
+flat = false
+
+[node name="InventoryTab" type="Button" parent="TabContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(120, 80)
+icon = ExtResource("4_inventory")
+flat = false
+
+[node name="QuestTab" type="Button" parent="TabContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(120, 80)
+icon = ExtResource("5_quest")
+flat = false
+
+[node name="SettingsTab" type="Button" parent="TabContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(120, 80)
+icon = ExtResource("6_settings")
+flat = false
+
+[node name="ContentArea" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -80.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="UpgradeContent" type="Control" parent="ContentArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="WeaponContent" type="Control" parent="ContentArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+visible = false
+
+[node name="InventoryContent" type="Control" parent="ContentArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+visible = false
+
+[node name="QuestContent" type="Control" parent="ContentArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+visible = false
+
+[node name="SettingsContent" type="Control" parent="ContentArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+visible = false

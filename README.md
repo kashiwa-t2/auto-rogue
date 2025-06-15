@@ -19,7 +19,9 @@ auto-rogue/
 ├── src/
 │   ├── scenes/          # シーンファイル(.tscn)
 │   │   ├── TitleScene.tscn      # タイトル画面（セーブ検出・削除機能）
-│   │   ├── MainScene.tscn       # メインゲーム画面（オートセーブ統合）
+│   │   ├── MainScene.tscn       # メインゲーム画面（タブシステム統合）
+│   │   ├── TabSystem.tscn       # パズドラ風タブUIシステム
+│   │   ├── WeaponUI.tscn        # 武器装備・強化画面
 │   │   ├── Player.tscn          # GreenCharacter (みどりくん) キャラクター
 │   │   ├── RedCharacter.tscn    # RedCharacter (あかさん) キャラクター
 │   │   ├── BasicEnemy.tscn      # 基本敵キャラクター
@@ -32,12 +34,16 @@ auto-rogue/
 │   └── scripts/         # スクリプトファイル(.gd)
 │       ├── GameConstants.gd     # 定数管理 (autoload)
 │       ├── SceneTransition.gd   # シーン遷移管理 (autoload)
-│       ├── PlayerStats.gd       # プレイヤーステータス管理 (autoload)
+│       ├── PlayerStats.gd       # プレイヤーステータス管理 (autoload、WeaponSystem統合)
 │       ├── SaveManager.gd       # セーブ/ロード/削除管理 (autoload)
+│       ├── BattleManager.gd     # バトルシステム管理（戦闘ロジック統合）
+│       ├── WeaponSystem.gd      # 武器装備・強化・レアリティ管理
+│       ├── TabSystem.gd         # パズドラ風タブUIシステム
+│       ├── WeaponUI.gd          # 武器UI管理（キャラ別武器画面）
 │       ├── TitleScene.gd        # タイトル画面制御（削除確認モーダル）
-│       ├── MainScene.gd         # メインシーン・戦闘・ダメージ・オートセーブ制御
+│       ├── MainScene.gd         # メインシーン制御（タブシステム統合）
 │       ├── GameOverScreen.gd    # ゲームオーバー画面制御
-│       ├── UpgradeUI.gd         # 育成画面UI制御
+│       ├── UpgradeUI.gd         # 育成画面UI制御（みどりくん・攻撃速度・ポーション）
 │       ├── Player.gd            # GreenCharacter (みどりくん) ・武器・HP制御
 │       ├── RedCharacter.gd      # RedCharacter (あかさん) ・魔法・HP制御
 │       ├── BlueMagicBullet.gd   # 青い魔法弾制御
@@ -90,7 +96,21 @@ auto-rogue/
 17. **データ削除**: タイトル画面の削除ボタンから確認モーダル経由で削除可能
 18. **ゲームオーバー**: プレイヤー死亡時に結果表示・タイトルへ戻る
 
-## 最新の更新 (2025/6/13) - 味方キャラクター命名統一 & RedCharacter攻撃システム改善
+## 最新の更新 (2025/6/15) - 武器システム＆パズドラ風タブUI実装
+
+### 新機能
+- **キャラクター別武器装備システム**: みどりくん用剣、あかさん用杖の個別管理
+- **武器レアリティシステム**: COMMON/RARE/EPIC/LEGENDARYの4段階
+- **パズドラ風タブUI**: 画面下部に5つの丸いタブアイコン配置
+- **独立した武器タブ**: 育成から武器を分離し専用タブ化
+- **弾むアニメーション**: タブ選択時のパズドラ風エフェクト
+
+### UI改善
+- **みどりくん表示統一**: 育成画面の「キャラクター」を「みどりくん」に修正
+- **タブデザイン**: カラフルで立体的な丸いボタン（緑/赤/黄/青/紫）
+- **後方互換性維持**: 既存セーブデータとの完全互換
+
+## 過去の更新 (2025/6/13) - 味方キャラクター命名統一 & RedCharacter攻撃システム改善
 
 ### キャラクター命名統一完了
 - **コードベース全体の命名統一**: GreenCharacter(みどりくん) & RedCharacter(あかさん)の一貫性確立

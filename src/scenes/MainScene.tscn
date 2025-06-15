@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://dqxxhwuau4w7o"]
+[gd_scene load_steps=15 format=3 uid="uid://dqxxhwuau4w7o"]
 
 [ext_resource type="Script" uid="uid://dq648hmylocmh" path="res://src/scripts/MainScene.gd" id="1_main_script"]
 [ext_resource type="PackedScene" uid="uid://c3fxp4k5n6m7o" path="res://src/scenes/Player.tscn" id="2_player_scene"]
@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://src/scripts/GameOverScreen.gd" id="6_gameover_script"]
 [ext_resource type="Script" path="res://src/scripts/UpgradeUI.gd" id="7_upgrade_script"]
 [ext_resource type="PackedScene" uid="uid://bg8m4n7q5kx2p" path="res://src/scenes/UpgradePanel.tscn" id="8_upgrade_panel"]
+[ext_resource type="PackedScene" uid="uid://bckv2p7cfe4nu" path="res://src/scenes/TabSystem.tscn" id="9_tab_system"]
+[ext_resource type="PackedScene" uid="uid://b83vhkdjr4x41" path="res://src/scenes/WeaponUI.tscn" id="10_weapon_ui"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
 bg_color = Color(0.1, 0.1, 0.1, 0.8)
@@ -151,7 +153,10 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.2, 0.3, 0.4, 1)
 
-[node name="UpgradeUI" type="Control" parent="UIArea"]
+[node name="TabSystem" parent="UIArea" instance=ExtResource("9_tab_system")]
+layout_mode = 1
+
+[node name="UpgradeUI" type="Control" parent="UIArea/TabSystem/ContentArea/UpgradeContent"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -160,7 +165,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("7_upgrade_script")
 
-[node name="Title" type="Label" parent="UIArea/UpgradeUI"]
+[node name="Title" type="Label" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI"]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -175,7 +180,7 @@ theme_override_font_sizes/font_size = 36
 text = "育成"
 horizontal_alignment = 1
 
-[node name="CoinDisplay" type="Panel" parent="UIArea/UpgradeUI"]
+[node name="CoinDisplay" type="Panel" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI"]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -187,7 +192,7 @@ offset_bottom = 70.0
 grow_horizontal = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_1")
 
-[node name="CoinIcon" type="TextureRect" parent="UIArea/UpgradeUI/CoinDisplay"]
+[node name="CoinIcon" type="TextureRect" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI/CoinDisplay"]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
@@ -200,7 +205,7 @@ grow_vertical = 2
 texture = ExtResource("5_coin_texture")
 stretch_mode = 4
 
-[node name="CoinLabel" type="Label" parent="UIArea/UpgradeUI/CoinDisplay"]
+[node name="CoinLabel" type="Label" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI/CoinDisplay"]
 layout_mode = 1
 anchors_preset = 6
 anchor_left = 1.0
@@ -219,48 +224,46 @@ text = "0"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="UpgradeScrollContainer" type="ScrollContainer" parent="UIArea/UpgradeUI"]
+[node name="UpgradeScrollContainer" type="ScrollContainer" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -360.0
+offset_left = -350.0
 offset_top = -300.0
-offset_right = 360.0
+offset_right = 350.0
 offset_bottom = 350.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="UpgradeContainer" type="GridContainer" parent="UIArea/UpgradeUI/UpgradeScrollContainer"]
+[node name="UpgradeContainer" type="GridContainer" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI/UpgradeScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 columns = 2
-theme_override_constants/h_separation = 30
+theme_override_constants/h_separation = 20
 theme_override_constants/v_separation = 30
-[node name="CharacterUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+
+[node name="CharacterUpgrade" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
 
-[node name="WeaponUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+[node name="AttackSpeedUpgrade" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
 
-[node name="AttackSpeedUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+[node name="PotionEffectUpgrade" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
 
-[node name="PotionEffectUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+[node name="RedUnlockUpgrade" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
 
-[node name="RedUnlockUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
-layout_mode = 2
-
-[node name="RedCharacterUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
+[node name="RedCharacterUpgrade" parent="UIArea/TabSystem/ContentArea/UpgradeContent/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
 layout_mode = 2
 visible = false
 
-[node name="RedWeaponUpgrade" parent="UIArea/UpgradeUI/UpgradeScrollContainer/UpgradeContainer" instance=ExtResource("8_upgrade_panel")]
-layout_mode = 2
-visible = false
+[node name="WeaponUI" parent="UIArea/TabSystem/ContentArea/WeaponContent" instance=ExtResource("10_weapon_ui")]
+layout_mode = 1
 
 [node name="GameOverScreen" type="Control" parent="."]
 visible = false

@@ -1,0 +1,144 @@
+[gd_scene load_steps=3 format=3 uid="uid://b83vhkdjr4x41"]
+
+[ext_resource type="Script" path="res://src/scripts/WeaponUI.gd" id="1_weapon_ui"]
+[ext_resource type="Texture2D" uid="uid://c8fg8sn0scgyl" path="res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0103.png" id="2_sword"]
+
+[node name="WeaponUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_weapon_ui")
+
+[node name="WeaponContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="WeaponContainer"]
+layout_mode = 2
+text = "武器装備"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CharacterTabs" type="TabContainer" parent="WeaponContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="GreenCharacterTab" type="Control" parent="WeaponContainer/CharacterTabs"]
+layout_mode = 2
+metadata/_tab_name = "みどりくん"
+
+[node name="WeaponInfo" type="VBoxContainer" parent="WeaponContainer/CharacterTabs/GreenCharacterTab"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 200.0
+grow_horizontal = 2
+
+[node name="WeaponIcon" type="TextureRect" parent="WeaponContainer/CharacterTabs/GreenCharacterTab/WeaponInfo"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 64)
+size_flags_horizontal = 4
+texture = ExtResource("2_sword")
+stretch_mode = 4
+
+[node name="WeaponName" type="Label" parent="WeaponContainer/CharacterTabs/GreenCharacterTab/WeaponInfo"]
+layout_mode = 2
+text = "ベーシックソード"
+horizontal_alignment = 1
+
+[node name="WeaponLevel" type="Label" parent="WeaponContainer/CharacterTabs/GreenCharacterTab/WeaponInfo"]
+layout_mode = 2
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="WeaponDamage" type="Label" parent="WeaponContainer/CharacterTabs/GreenCharacterTab/WeaponInfo"]
+layout_mode = 2
+text = "攻撃力: 10"
+horizontal_alignment = 1
+
+[node name="UpgradeContainer" type="VBoxContainer" parent="WeaponContainer/CharacterTabs/GreenCharacterTab"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -100.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="CostLabel" type="Label" parent="WeaponContainer/CharacterTabs/GreenCharacterTab/UpgradeContainer"]
+layout_mode = 2
+text = "50 コイン"
+horizontal_alignment = 1
+
+[node name="UpgradeButton" type="Button" parent="WeaponContainer/CharacterTabs/GreenCharacterTab/UpgradeContainer"]
+layout_mode = 2
+text = "強化"
+
+[node name="RedCharacterTab" type="Control" parent="WeaponContainer/CharacterTabs"]
+layout_mode = 2
+metadata/_tab_name = "あかさん"
+
+[node name="WeaponInfo" type="VBoxContainer" parent="WeaponContainer/CharacterTabs/RedCharacterTab"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 200.0
+grow_horizontal = 2
+
+[node name="WeaponIcon" type="TextureRect" parent="WeaponContainer/CharacterTabs/RedCharacterTab/WeaponInfo"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 64)
+size_flags_horizontal = 4
+texture = ExtResource("2_sword")
+stretch_mode = 4
+
+[node name="WeaponName" type="Label" parent="WeaponContainer/CharacterTabs/RedCharacterTab/WeaponInfo"]
+layout_mode = 2
+text = "ベーシックスタッフ"
+horizontal_alignment = 1
+
+[node name="WeaponLevel" type="Label" parent="WeaponContainer/CharacterTabs/RedCharacterTab/WeaponInfo"]
+layout_mode = 2
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="WeaponDamage" type="Label" parent="WeaponContainer/CharacterTabs/RedCharacterTab/WeaponInfo"]
+layout_mode = 2
+text = "攻撃力: 8"
+horizontal_alignment = 1
+
+[node name="UpgradeContainer" type="VBoxContainer" parent="WeaponContainer/CharacterTabs/RedCharacterTab"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -100.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="CostLabel" type="Label" parent="WeaponContainer/CharacterTabs/RedCharacterTab/UpgradeContainer"]
+layout_mode = 2
+text = "50 コイン"
+horizontal_alignment = 1
+
+[node name="UpgradeButton" type="Button" parent="WeaponContainer/CharacterTabs/RedCharacterTab/UpgradeContainer"]
+layout_mode = 2
+text = "強化"
+
+[node name="WeaponList" type="ItemList" parent="WeaponContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 150)
+size_flags_vertical = 3

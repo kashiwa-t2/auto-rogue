@@ -30,6 +30,10 @@ func get_max_hp() -> int:
 
 func get_attack_damage() -> int:
 	"""GreenCharacter(みどりくん)武器レベルに基づく攻撃力を計算"""
+	# WeaponSystemが利用可能な場合はそちらを使用、フォールバック用に従来計算も保持
+	var weapon_system = _get_weapon_system()
+	if weapon_system:
+		return weapon_system.get_weapon_damage("green")
 	return GameConstants.PLAYER_DEFAULT_ATTACK_DAMAGE + (weapon_level - 1) * GameConstants.DAMAGE_PER_WEAPON_LEVEL
 
 func get_attack_interval() -> float:
@@ -48,6 +52,10 @@ func get_red_character_max_hp() -> int:
 
 func get_red_character_attack_damage() -> int:
 	"""RedCharacter(あかさん)の武器レベルに基づく攻撃力を計算"""
+	# WeaponSystemが利用可能な場合はそちらを使用、フォールバック用に従来計算も保持
+	var weapon_system = _get_weapon_system()
+	if weapon_system:
+		return weapon_system.get_weapon_damage("red")
 	return 10 + (red_weapon_level - 1) * 3  # 初期ダメージ10、レベルごとに3増加
 
 func get_red_character_attack_range() -> float:
@@ -241,6 +249,42 @@ func reset_stats() -> void:
 func _update_stats() -> void:
 	"""ステータス更新（SaveManagerからのロード後に呼び出し）"""
 	_log_debug("Stats updated - Character Lv: %d, Weapon Lv: %d, Attack Speed Lv: %d, Potion Lv: %d, Coins: %d" % [character_level, weapon_level, attack_speed_level, potion_effect_level, total_coins])
+
+## WeaponSystem取得ヘルパー
+func _get_weapon_system() -> WeaponSystem:
+	"""WeaponSystemインスタンスを取得"""
+	# MainSceneのWeaponUIからWeaponSystemを取得
+	var main_scene = get_tree().current_scene
+	if main_scene and main_scene.has_method("get_weapon_system"):
+		return main_scene.get_weapon_system()
+	
+	# WeaponUIから直接取得を試行
+	var weapon_ui_nodes = get_tree().get_nodes_in_group("weapon_ui")
+	for node in weapon_ui_nodes:
+		if node.has_method("get_weapon_system"):
+			return node.get_weapon_system()
+	
+	return null
+
+## WeaponSystemとの統合メソッド
+func sync_weapon_levels_to_weapon_system() -> void:
+	"""従来の武器レベルをWeaponSystemに同期"""
+	var weapon_system = _get_weapon_system()
+	if not weapon_system:
+		return
+	
+	# みどりくんの武器レベルを同期
+	var green_weapon = weapon_system.get_character_weapon("green")
+	if green_weapon and green_weapon.level != weapon_level:
+		green_weapon.level = weapon_level
+		_log_debug("Green weapon level synced to: %d" % weapon_level)
+	
+	# あかさんの武器レベルを同期
+	if red_character_unlocked:
+		var red_weapon = weapon_system.get_character_weapon("red")
+		if red_weapon and red_weapon.level != red_weapon_level:
+			red_weapon.level = red_weapon_level
+			_log_debug("Red weapon level synced to: %d" % red_weapon_level)
 
 ## デバッグログ出力
 func _log_debug(message: String) -> void:
