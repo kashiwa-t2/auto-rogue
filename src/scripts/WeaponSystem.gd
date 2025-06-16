@@ -60,14 +60,27 @@ var red_character_weapon: WeaponData = null
 # 利用可能武器データベース
 var weapon_database: Dictionary = {}
 
+# 復元状態フラグ
+var is_levels_restored: bool = false
+
 # シグナル
 signal weapon_equipped(character_name: String, weapon: WeaponData)
 signal weapon_upgraded(character_name: String, weapon: WeaponData)
 
 func _ready():
 	_log_debug("🏁 WeaponSystem._ready() started")
+	_log_debug("🔍 PlayerStats available: %s" % (PlayerStats != null))
+	if PlayerStats:
+		_log_debug("📊 PlayerStats.weapon_system_levels size: %d" % PlayerStats.weapon_system_levels.size())
+		_log_debug("📋 PlayerStats.weapon_system_levels: %s" % PlayerStats.weapon_system_levels)
+	
 	_initialize_weapon_database()
 	_setup_default_weapons()
+	
+	# 初期化完了後、保存済み武器レベルを復元
+	_log_debug("⏳ Scheduling weapon level restoration...")
+	call_deferred("_restore_saved_weapon_levels")
+	
 	_log_debug("✅ WeaponSystem._ready() completed")
 
 ## 武器データベース初期化
@@ -178,9 +191,8 @@ func upgrade_weapon(character_name: String) -> bool:
 	var current_coins = PlayerStats.total_coins
 	_log_debug("💰 Current coins: %d, Upgrade cost: %d, Weapon: %s (Level %d)" % [current_coins, cost, weapon.name, weapon.level])
 	
-	if PlayerStats.total_coins >= cost:
+	if PlayerStats.spend_coins_no_save(cost):
 		var old_level = weapon.level
-		PlayerStats.total_coins -= cost
 		weapon.level += 1
 		
 		_log_debug("⬆️ Weapon upgraded: %s Level %d → %d" % [weapon.name, old_level, weapon.level])
@@ -188,8 +200,12 @@ func upgrade_weapon(character_name: String) -> bool:
 		# PlayerStatsに武器レベル変更を通知
 		_update_player_stats_weapon_level(weapon.id, weapon.level)
 		
-		# 武器アップグレード成功時に即座セーブ
-		_log_debug("💾 Saving weapon upgrade...")
+		# 武器アップグレード後は確実に復元済み状態とする
+		is_levels_restored = true
+		_log_debug("🏁 WeaponSystem marked as levels restored (after upgrade)")
+		
+		# 武器レベル更新後に手動でセーブ実行
+		_log_debug("💾 Saving weapon upgrade after level update...")
 		SaveManager.save_game()
 		_log_debug("✅ Weapon upgrade saved: %s Level %d" % [weapon.name, weapon.level])
 		
@@ -354,6 +370,48 @@ func _debug_test_all_weapons() -> void:
 				_log_debug("    Upgrade %d: %s (Level %d → %d)" % [i+1, upgrade_result, old_level, new_level])
 	
 	_log_debug("🧪 DEBUG: All weapons test completed")
+	_debug_show_all_weapon_levels()
+
+## 保存済み武器レベルの復元
+func _restore_saved_weapon_levels() -> void:
+	"""PlayerStatsから保存済み武器レベルを復元"""
+	_log_debug("🔄 Restoring saved weapon levels...")
+	
+	if not PlayerStats:
+		_log_debug("❌ PlayerStats not available")
+		return
+	
+	var saved_levels = PlayerStats.weapon_system_levels
+	if saved_levels.size() == 0:
+		_log_debug("📭 No saved weapon levels found - marking as restored (new game)")
+		is_levels_restored = true
+		return
+	
+	_log_debug("📊 Found %d saved weapon levels: %s" % [saved_levels.size(), saved_levels])
+	
+	var restored_count = 0
+	for weapon_id in saved_levels:
+		var saved_level = saved_levels[weapon_id]
+		if weapon_database.has(weapon_id):
+			var weapon = weapon_database[weapon_id]
+			var old_level = weapon.level
+			weapon.level = saved_level
+			restored_count += 1
+			
+			if saved_level > 1:
+				_log_debug("🔓 RESTORED: %s (%s) Level %d → %d ⭐" % [weapon_id, weapon.name, old_level, saved_level])
+			else:
+				_log_debug("🔓 Restored: %s (%s) Level %d → %d (basic)" % [weapon_id, weapon.name, old_level, saved_level])
+		else:
+			_log_debug("⚠️ Saved weapon %s not found in database" % weapon_id)
+	
+	_log_debug("✅ Weapon level restoration completed: %d/%d weapons restored" % [restored_count, saved_levels.size()])
+	
+	# 復元完了フラグを設定
+	is_levels_restored = true
+	_log_debug("🏁 WeaponSystem marked as levels restored")
+	
+	# 復元後の状態を表示
 	_debug_show_all_weapon_levels()
 
 ## デバッグログ

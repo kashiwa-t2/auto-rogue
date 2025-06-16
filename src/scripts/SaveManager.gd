@@ -111,3 +111,58 @@ func delete_save() -> bool:
 
 func _get_save_file_path() -> String:
 	return SAVE_DIR + AUTOSAVE_FILE
+
+## デバッグ用：セーブファイルの中身を詳細表示
+func debug_save_file_contents() -> void:
+	"""セーブファイルの内容を詳細に表示（デバッグ用）"""
+	var file_path = _get_save_file_path()
+	
+	if not FileAccess.file_exists(file_path):
+		print("[SaveManager] 🔍 DEBUG: Save file does not exist: %s" % file_path)
+		return
+	
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	if file == null:
+		print("[SaveManager] 🔍 DEBUG: Failed to open save file: %s" % file_path)
+		return
+	
+	var save_data = file.get_var()
+	file.close()
+	
+	print("[SaveManager] 🔍 === DEBUG: SAVE FILE CONTENTS ===")
+	print("  📁 File path: %s" % file_path)
+	print("  📊 Keys in save data: %s" % save_data.keys())
+	
+	for key in save_data.keys():
+		var value = save_data[key]
+		if key == "weapon_system_levels":
+			print("  🗡️ %s: %s" % [key, value])
+			if value is Dictionary and value.size() > 0:
+				print("    📋 Weapon level details:")
+				for weapon_id in value:
+					var level = value[weapon_id]
+					var status = "⭐ UPGRADED" if level > 1 else "🔹 BASIC"
+					print("      - %s: Level %d %s" % [weapon_id, level, status])
+			else:
+				print("    ⚠️ No weapon levels found in save file!")
+		else:
+			print("  📊 %s: %s" % [key, value])
+	
+	print("[SaveManager] 🔍 === END DEBUG ===")
+
+## デバッグ用：PlayerStatsの武器レベル状態確認
+func debug_playerstats_weapon_levels() -> void:
+	"""PlayerStatsの武器レベル状態を確認（デバッグ用）"""
+	print("[SaveManager] 🔍 === DEBUG: PLAYERSTATS WEAPON LEVELS ===")
+	print("  📊 PlayerStats.weapon_system_levels: %s" % PlayerStats.weapon_system_levels)
+	
+	if PlayerStats.weapon_system_levels.size() == 0:
+		print("  ⚠️ PlayerStats has NO weapon levels stored!")
+	else:
+		print("  📋 PlayerStats weapon level details:")
+		for weapon_id in PlayerStats.weapon_system_levels:
+			var level = PlayerStats.weapon_system_levels[weapon_id]
+			var status = "⭐ UPGRADED" if level > 1 else "🔹 BASIC"
+			print("    - %s: Level %d %s" % [weapon_id, level, status])
+	
+	print("[SaveManager] 🔍 === END DEBUG ===")

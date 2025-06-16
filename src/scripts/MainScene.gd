@@ -44,6 +44,7 @@ func _ready():
 	_setup_scroll_signals()
 	_setup_distance_tracking()
 	_setup_gold_display()
+	_setup_player_stats_signals()
 	_setup_upgrade_ui()
 	_setup_enemy_spawn_timer()
 	_setup_autosave_timer()
@@ -202,6 +203,12 @@ func _setup_upgrade_ui() -> void:
 		_log_debug("Upgrade UI initialized")
 	else:
 		_log_error("Upgrade UI not found!")
+
+## PlayerStatsシグナルの設定
+func _setup_player_stats_signals() -> void:
+	"""PlayerStatsのシグナルを接続してUI更新を自動化"""
+	PlayerStats.coins_changed.connect(_on_coins_changed)
+	_log_debug("PlayerStats signals connected - coins_changed")
 
 ## 敵スポーンタイマーの設定
 func _setup_enemy_spawn_timer() -> void:
@@ -444,6 +451,12 @@ func _load_player_data() -> void:
 func _on_coin_collected(value: int) -> void:
 	_log_debug("Coin collection animation completed! Value: %d" % value)
 	# 追加のUI更新があればここで実行
+
+## コイン変更イベントハンドラー
+func _on_coins_changed(new_amount: int) -> void:
+	"""PlayerStatsのコイン変更時にUIを自動更新"""
+	_log_debug("Coins changed to: %d, updating UI..." % new_amount)
+	_update_gold_display()
 
 ## レベルアップ完了イベントハンドラー
 func _on_upgrade_completed() -> void:

@@ -35,6 +35,12 @@ var weapon_system: WeaponSystem
 signal weapon_upgraded(character_name: String)
 
 func _ready():
+	_log_debug("🏁 WeaponUI._ready() started")
+	_log_debug("🔍 PlayerStats available: %s" % (PlayerStats != null))
+	if PlayerStats:
+		_log_debug("📊 PlayerStats.weapon_system_levels size: %d" % PlayerStats.weapon_system_levels.size())
+		_log_debug("📋 PlayerStats.weapon_system_levels: %s" % PlayerStats.weapon_system_levels)
+	
 	add_to_group("weapon_ui")
 	_setup_weapon_system()
 	_setup_ui_signals()
@@ -44,6 +50,8 @@ func _ready():
 	# WeaponSystemの完全な初期化を待つためcall_deferred()を使用
 	_log_debug("🔄 WeaponUI._ready() scheduling weapon level sync...")
 	call_deferred("_sync_weapon_levels_after_initialization")
+	
+	_log_debug("✅ WeaponUI._ready() completed")
 
 ## 武器システム初期化
 func _setup_weapon_system() -> void:
@@ -53,6 +61,10 @@ func _setup_weapon_system() -> void:
 	# 武器システムシグナル接続
 	weapon_system.weapon_equipped.connect(_on_weapon_equipped)
 	weapon_system.weapon_upgraded.connect(_on_weapon_upgraded)
+	
+	# 新しいWeaponSystemインスタンス作成後、即座に保存済み武器レベルを復元
+	_log_debug("🔄 New WeaponSystem created, restoring saved weapon levels...")
+	call_deferred("_restore_weapon_levels_immediately")
 
 ## UIシグナル設定
 func _setup_ui_signals() -> void:
@@ -318,6 +330,42 @@ func _sync_weapon_levels_after_initialization() -> void:
 		_log_debug("❌ WeaponSystem not ready, retrying...")
 		# WeaponSystemがまだ準備できていない場合は再試行
 		call_deferred("_sync_weapon_levels_after_initialization")
+
+## 新しいWeaponSystemインスタンス作成時の即座レベル復元
+func _restore_weapon_levels_immediately() -> void:
+	"""新しいWeaponSystemインスタンス作成後、即座に保存済み武器レベルを復元"""
+	_log_debug("🚀 _restore_weapon_levels_immediately() called")
+	
+	if not weapon_system or not weapon_system.weapon_database:
+		_log_debug("❌ WeaponSystem not ready, retrying in next frame...")
+		call_deferred("_restore_weapon_levels_immediately")
+		return
+	
+	_log_debug("✅ WeaponSystem ready, restoring saved weapon levels...")
+	_log_debug("📊 PlayerStats.weapon_system_levels: %s" % PlayerStats.weapon_system_levels)
+	
+	# 保存されている武器レベルを復元
+	var restored_count = 0
+	for weapon_id in PlayerStats.weapon_system_levels:
+		var saved_level = PlayerStats.weapon_system_levels[weapon_id]
+		if weapon_system.weapon_database.has(weapon_id):
+			var weapon = weapon_system.weapon_database[weapon_id]
+			var old_level = weapon.level
+			weapon.level = saved_level
+			restored_count += 1
+			_log_debug("🔓 RESTORED: %s Level %d → %d" % [weapon_id, old_level, saved_level])
+		else:
+			_log_debug("⚠️ Weapon %s not found in new database" % weapon_id)
+	
+	_log_debug("✅ Immediate restoration completed: %d/%d weapons restored" % [restored_count, PlayerStats.weapon_system_levels.size()])
+	
+	# 復元完了フラグを設定
+	weapon_system.is_levels_restored = true
+	_log_debug("🏁 WeaponSystem marked as levels restored (via WeaponUI)")
+	
+	# 表示を更新
+	_update_display()
+	_log_debug("🎯 UI updated after immediate weapon level restoration")
 
 ## WeaponSystem取得
 func get_weapon_system() -> WeaponSystem:

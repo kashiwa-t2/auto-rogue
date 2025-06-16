@@ -26,6 +26,9 @@ var total_coins: int = 0
 # WeaponSystem武器レベル（個別武器データ）
 var weapon_system_levels: Dictionary = {}
 
+# シグナル
+signal coins_changed(new_amount: int)
+
 # ステータス計算
 func get_max_hp() -> int:
 	"""GreenCharacter(みどりくん)レベルに基づく最大HPを計算"""
@@ -103,6 +106,7 @@ func level_up_character() -> bool:
 		total_coins -= cost
 		character_level += 1
 		_log_debug("Character leveled up to %d! Cost: %d coins" % [character_level, cost])
+		coins_changed.emit(total_coins)
 		# コイン消費時にオートセーブ実行
 		SaveManager.autosave()
 		return true
@@ -115,6 +119,7 @@ func level_up_weapon() -> bool:
 		total_coins -= cost
 		weapon_level += 1
 		_log_debug("Weapon leveled up to %d! Cost: %d coins" % [weapon_level, cost])
+		coins_changed.emit(total_coins)
 		# コイン消費時にオートセーブ実行
 		SaveManager.autosave()
 		return true
@@ -127,6 +132,7 @@ func level_up_attack_speed() -> bool:
 		total_coins -= cost
 		attack_speed_level += 1
 		_log_debug("Attack speed leveled up to %d! Cost: %d coins" % [attack_speed_level, cost])
+		coins_changed.emit(total_coins)
 		# コイン消費時にオートセーブ実行
 		SaveManager.autosave()
 		return true
@@ -139,6 +145,7 @@ func level_up_potion_effect() -> bool:
 		total_coins -= cost
 		potion_effect_level += 1
 		_log_debug("Potion effect leveled up to %d! Cost: %d coins" % [potion_effect_level, cost])
+		coins_changed.emit(total_coins)
 		# コイン消費時にオートセーブ実行
 		SaveManager.autosave()
 		return true
@@ -155,6 +162,7 @@ func unlock_red_character() -> bool:
 		total_coins -= cost
 		red_character_unlocked = true
 		_log_debug("Red character unlocked! Cost: %d coins" % cost)
+		coins_changed.emit(total_coins)
 		# コイン消費時にオートセーブ実行
 		SaveManager.autosave()
 		return true
@@ -170,6 +178,7 @@ func level_up_red_character() -> bool:
 		total_coins -= cost
 		red_character_level += 1
 		_log_debug("Red character leveled up to %d! Cost: %d coins" % [red_character_level, cost])
+		coins_changed.emit(total_coins)
 		# コイン消費時にオートセーブ実行
 		SaveManager.autosave()
 		return true
@@ -185,6 +194,7 @@ func level_up_red_weapon() -> bool:
 		total_coins -= cost
 		red_weapon_level += 1
 		_log_debug("Red weapon leveled up to %d! Cost: %d coins" % [red_weapon_level, cost])
+		coins_changed.emit(total_coins)
 		# コイン消費時にオートセーブ実行
 		SaveManager.autosave()
 		return true
@@ -195,14 +205,25 @@ func add_coins(amount: int) -> void:
 	"""コインを追加"""
 	total_coins += amount
 	_log_debug("Added %d coins. Total: %d" % [amount, total_coins])
+	coins_changed.emit(total_coins)
 
 func spend_coins(amount: int) -> bool:
 	"""コインを消費（成功時true）"""
 	if total_coins >= amount:
 		total_coins -= amount
 		_log_debug("Spent %d coins. Remaining: %d" % [amount, total_coins])
+		coins_changed.emit(total_coins)
 		# コイン消費時にオートセーブ実行
 		SaveManager.autosave()
+		return true
+	return false
+
+func spend_coins_no_save(amount: int) -> bool:
+	"""コインを消費（セーブなし・武器アップグレード専用）"""
+	if total_coins >= amount:
+		total_coins -= amount
+		_log_debug("Spent %d coins (no save). Remaining: %d" % [amount, total_coins])
+		coins_changed.emit(total_coins)
 		return true
 	return false
 
@@ -250,6 +271,16 @@ func save_data() -> Dictionary:
 		var status = "⭐ UPGRADED" if level > 1 else "🔹 BASIC"
 		_log_debug("  - %s: Level %d %s" % [weapon_id, level, status])
 	
+	# Double-check with current WeaponSystem state
+	var weapon_system = _get_weapon_system()
+	if weapon_system:
+		_log_debug("🔍 DOUBLE-CHECK: Current WeaponSystem database levels:")
+		for weapon_id in weapon_system.weapon_database:
+			var weapon = weapon_system.weapon_database[weapon_id]
+			var saved_level = weapon_system_levels.get(weapon_id, -1)
+			var match_status = "✅ MATCH" if weapon.level == saved_level else "❌ MISMATCH"
+			_log_debug("  - %s: DB Level %d, Saved Level %d %s" % [weapon_id, weapon.level, saved_level, match_status])
+	
 	return save_dict
 
 func load_data(data: Dictionary) -> void:
@@ -273,10 +304,13 @@ func load_data(data: Dictionary) -> void:
 	
 	# Detailed logging of loaded weapon levels
 	_log_debug("📋 LOADED: Weapon levels from save data:")
-	for weapon_id in weapon_system_levels:
-		var level = weapon_system_levels[weapon_id]
-		var status = "⭐ UPGRADED" if level > 1 else "🔹 BASIC"
-		_log_debug("  - %s: Level %d %s" % [weapon_id, level, status])
+	if weapon_system_levels.size() == 0:
+		_log_debug("  ⚠️ No weapon levels found in save data!")
+	else:
+		for weapon_id in weapon_system_levels:
+			var level = weapon_system_levels[weapon_id]
+			var status = "⭐ UPGRADED" if level > 1 else "🔹 BASIC"
+			_log_debug("  - %s: Level %d %s" % [weapon_id, level, status])
 	
 	# WeaponSystemに武器レベルを復元（WeaponSystemが初期化された後にWeaponUI側で実行される）
 	_log_debug("⏳ Weapon level sync will be performed later when WeaponSystem is ready")
@@ -431,9 +465,17 @@ func _sync_weapon_levels_to_weapon_system() -> void:
 
 func _sync_weapon_levels_from_weapon_system() -> void:
 	"""WeaponSystemからPlayerStatsに武器レベルを保存"""
+	_log_debug("🚨 _sync_weapon_levels_from_weapon_system() called - checking safety...")
+	_log_debug("📊 BEFORE sync - PlayerStats.weapon_system_levels: %s" % weapon_system_levels)
+	
 	var weapon_system = _get_weapon_system()
 	if not weapon_system:
 		_log_debug("❌ WeaponSystem not available for level extraction")
+		return
+	
+	# 安全チェック: 復元未完了のWeaponSystemからは同期しない
+	if not weapon_system.is_levels_restored:
+		_log_debug("🛡️ SYNC BLOCKED: WeaponSystem levels not restored yet, skipping sync to prevent overwrite")
 		return
 	
 	_log_debug("🔄 Extracting weapon levels from WeaponSystem...")
@@ -447,18 +489,32 @@ func _sync_weapon_levels_from_weapon_system() -> void:
 	if red_equipped:
 		_log_debug("🔴 Currently equipped Red weapon: %s Level %d" % [red_equipped.name, red_equipped.level])
 	
-	# WeaponSystemの全武器レベルを取得
-	weapon_system_levels.clear()
-	_log_debug("📊 Extracting levels from ALL weapons in database:")
+	# WeaponSystemの全武器レベルを取得（上書き防止チェック付き）
+	_log_debug("📊 Extracting levels from ALL weapons in database with overwrite protection:")
+	var overwrite_count = 0
+	var preserve_count = 0
+	
 	for weapon_id in weapon_system.weapon_database:
 		var weapon = weapon_system.weapon_database[weapon_id]
-		weapon_system_levels[weapon_id] = weapon.level
+		var current_stored_level = weapon_system_levels.get(weapon_id, 1)
+		var weapon_db_level = weapon.level
+		
 		var equipped_status = ""
 		if green_equipped and green_equipped.id == weapon_id:
 			equipped_status = " [EQUIPPED-GREEN]"
 		elif red_equipped and red_equipped.id == weapon_id:
 			equipped_status = " [EQUIPPED-RED]"
-		_log_debug("💾 Saved weapon %s (%s) level %d%s" % [weapon_id, weapon.name, weapon.level, equipped_status])
+		
+		# 上書き防止: WeaponSystemのレベルが既存より低い場合は保持
+		if weapon_db_level >= current_stored_level:
+			weapon_system_levels[weapon_id] = weapon_db_level
+			overwrite_count += 1
+			_log_debug("💾 Updated weapon %s (%s): Level %d → %d%s" % [weapon_id, weapon.name, current_stored_level, weapon_db_level, equipped_status])
+		else:
+			preserve_count += 1
+			_log_debug("🛡️ PRESERVED weapon %s (%s): Kept Level %d (DB has %d)%s" % [weapon_id, weapon.name, current_stored_level, weapon_db_level, equipped_status])
+	
+	_log_debug("📊 Sync result: %d updated, %d preserved" % [overwrite_count, preserve_count])
 	
 	_log_debug("✅ Extracted %d weapon levels for saving:" % weapon_system_levels.size())
 	_log_debug("📋 Complete weapon_system_levels: %s" % weapon_system_levels)
@@ -470,6 +526,14 @@ func update_weapon_system_level(weapon_id: String, new_level: int) -> void:
 	weapon_system_levels[weapon_id] = new_level
 	_log_debug("🔔 WeaponSystem notification: %s Level %d → %d" % [weapon_id, old_level, new_level])
 	_log_debug("📊 Current weapon_system_levels: %s" % weapon_system_levels)
+	
+	# 即座に検証を実行
+	var weapon_system = _get_weapon_system()
+	if weapon_system and weapon_system.weapon_database.has(weapon_id):
+		var db_level = weapon_system.weapon_database[weapon_id].level
+		var stored_level = weapon_system_levels[weapon_id]
+		var sync_status = "✅ SYNCED" if db_level == stored_level else "⚠️ DESYNC"
+		_log_debug("🔍 Sync verification: %s DB Level %d, Stored Level %d %s" % [weapon_id, db_level, stored_level, sync_status])
 
 ## 公開メソッド：武器レベル修復
 func fix_weapon_levels() -> void:
