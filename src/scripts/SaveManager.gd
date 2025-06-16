@@ -21,16 +21,23 @@ func save_game() -> bool:
 	save_data["timestamp"] = Time.get_ticks_msec()
 	save_data["date"] = Time.get_datetime_string_from_system()
 	
+	# セーブデータの詳細ログ
+	print("[SaveManager] 💾 Saving game data:")
+	print("  - Character Level: %d" % save_data.get("character_level", 0))
+	print("  - Weapon Level: %d" % save_data.get("weapon_level", 0))
+	print("  - Total Coins: %d" % save_data.get("total_coins", 0))
+	print("  - Weapon System Levels: %s" % save_data.get("weapon_system_levels", {}))
+	
 	var file_path = _get_save_file_path()
 	var file = FileAccess.open(file_path, FileAccess.WRITE)
 	if file == null:
-		print("[SaveManager] セーブファイルの作成に失敗しました: ", file_path)
+		print("[SaveManager] ❌ セーブファイルの作成に失敗しました: ", file_path)
 		return false
 	
 	file.store_var(save_data)
 	file.close()
 	
-	print("[SaveManager] オートセーブ完了")
+	print("[SaveManager] ✅ セーブ完了: %s" % file_path)
 	return true
 
 func load_game() -> bool:
@@ -48,9 +55,16 @@ func load_game() -> bool:
 	var save_data = file.get_var()
 	file.close()
 	
+	# ロードデータの詳細ログ
+	print("[SaveManager] 📂 Loading game data:")
+	print("  - Character Level: %d" % save_data.get("character_level", 0))
+	print("  - Weapon Level: %d" % save_data.get("weapon_level", 0))
+	print("  - Total Coins: %d" % save_data.get("total_coins", 0))
+	print("  - Weapon System Levels: %s" % save_data.get("weapon_system_levels", {}))
+	
 	# 最低限必要なフィールドのチェック
 	if save_data == null or not save_data.has_all(["total_coins", "character_level", "weapon_level"]):
-		print("[SaveManager] セーブデータが破損しています: ", file_path)
+		print("[SaveManager] ❌ セーブデータが破損しています: ", file_path)
 		return false
 	
 	# PlayerStatsの統一ロードメソッドを使用（後方互換性あり）

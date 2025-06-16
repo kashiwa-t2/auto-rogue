@@ -87,12 +87,62 @@ func _setup_walk_animation() -> void:
 
 ## 武器の初期設定
 func _setup_weapon() -> void:
-	"""武器スプライトの初期設定"""
-	if weapon_sprite:
-		# 武器テクスチャを読み込み
-		var weapon_texture = _load_texture_safe(GameConstants.PLAYER_WEAPON_SPRITE)
+	"""武器スプライトの初期設定（WeaponSystemから取得）"""
+	_update_weapon_from_system()
+
+## WeaponSystemから武器を更新
+func _update_weapon_from_system() -> void:
+	"""WeaponSystemから現在の武器データを取得して反映"""
+	_log_debug("=== Starting weapon update from WeaponSystem ===")
+	
+	# WeaponSystemの取得を試行
+	var weapon_system = _get_weapon_system()
+	if not weapon_system:
+		_log_error("WeaponSystem not available, using fallback")
+		_fallback_weapon_setup()
+		return
+	
+	_log_debug("WeaponSystem obtained successfully: %s" % weapon_system)
+	
+	# 武器データの取得
+	var weapon_sprite_path = weapon_system.get_weapon_sprite_path("green")
+	var weapon_damage_value = weapon_system.get_weapon_damage("green")
+	var weapon_range_value = weapon_system.get_weapon_attack_range("green")
+	
+	# 武器の完全なデータを取得（レアリティ情報のため）
+	var weapon_data = weapon_system.get_character_weapon("green")
+	
+	_log_debug("Weapon data from WeaponSystem - Path: '%s', Damage: %d, Range: %.1f" % [weapon_sprite_path, weapon_damage_value, weapon_range_value])
+	if weapon_data:
+		_log_debug("Weapon rarity: %s" % weapon_data.rarity)
+	
+	# 攻撃力と射程を更新
+	attack_damage = weapon_damage_value
+	_log_debug("Attack damage updated to: %d" % attack_damage)
+	
+	# weapon_spriteノードの存在確認
+	if not weapon_sprite:
+		_log_error("weapon_sprite node is null! Cannot update weapon visuals.")
+		return
+	
+	_log_debug("weapon_sprite node exists: %s" % weapon_sprite)
+	
+	# 武器スプライト更新
+	if weapon_sprite_path != "":
+		_log_debug("Attempting to update weapon sprite to: %s" % weapon_sprite_path)
+		var weapon_texture = _load_texture_safe(weapon_sprite_path)
 		if weapon_texture:
+			_log_debug("Weapon texture loaded successfully, updating sprite...")
+			
+			# 以前のテクスチャを記録
+			var previous_texture = weapon_sprite.texture
+			_log_debug("Previous texture: %s" % previous_texture)
+			
+			# 新しいテクスチャを設定
 			weapon_sprite.texture = weapon_texture
+			_log_debug("Weapon sprite texture updated! New texture: %s" % weapon_sprite.texture)
+			
+			# スプライト設定を更新
 			weapon_sprite.scale = Vector2(GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_SCALE)
 			weapon_sprite.flip_h = true  # 剣の刃を正しい方向に向ける
 			
@@ -108,11 +158,130 @@ func _setup_weapon() -> void:
 			
 			weapon_sprite.rotation_degrees = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
 			weapon_initial_rotation = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
-			_log_debug("Weapon initialized: scale=%f, position=%s, rotation=%f, offset=%s, z_index=%d" % [GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_OFFSET, weapon_initial_rotation, weapon_sprite.offset, weapon_sprite.z_index])
+			
+			# レアリティ色を適用
+			if weapon_data and weapon_system:
+				var rarity_color = weapon_system.get_rarity_color(weapon_data.rarity)
+				weapon_sprite.modulate = rarity_color
+				_log_debug("Applied rarity color: %s for rarity: %s" % [rarity_color, weapon_data.rarity])
+			else:
+				weapon_sprite.modulate = Color.WHITE
+				_log_debug("No rarity data available, using default white color")
+			
+			_log_debug("Weapon visual update completed successfully!")
+			_log_debug("Final weapon state - Texture: %s, Scale: %s, Position: %s, Z-index: %d, Color: %s" % [weapon_sprite.texture, weapon_sprite.scale, weapon_sprite.position, weapon_sprite.z_index, weapon_sprite.modulate])
 		else:
-			_log_error("Failed to load weapon sprite")
+			_log_error("Failed to load weapon sprite from WeaponSystem: %s" % weapon_sprite_path)
+			_fallback_weapon_setup()
 	else:
-		_log_error("Weapon sprite node not found")
+		_log_debug("Empty weapon sprite path from WeaponSystem, using fallback")
+		_fallback_weapon_setup()
+	
+	_log_debug("=== Weapon update from WeaponSystem completed ===")
+
+## WeaponSystem取得ヘルパー
+func _get_weapon_system() -> WeaponSystem:
+	"""WeaponSystemインスタンスを取得"""
+	_log_debug("--- Attempting to get WeaponSystem ---")
+	
+	# Method 1: MainSceneのget_weapon_system()メソッドを使用
+	var main_scene = get_tree().current_scene
+	_log_debug("Current scene: %s" % main_scene)
+	
+	if main_scene and main_scene.has_method("get_weapon_system"):
+		_log_debug("MainScene has get_weapon_system method, calling it...")
+		var weapon_system = main_scene.get_weapon_system()
+		_log_debug("MainScene.get_weapon_system() returned: %s" % weapon_system)
+		if weapon_system:
+			_log_debug("✓ WeaponSystem obtained from MainScene successfully!")
+			return weapon_system
+	else:
+		_log_debug("MainScene does not have get_weapon_system method or is null")
+	
+	# Method 2: 直接WeaponUIを探す（グループ経由）
+	_log_debug("Method 2: Trying direct WeaponUI search via group...")
+	var weapon_ui_nodes = get_tree().get_nodes_in_group("weapon_ui")
+	_log_debug("Found %d weapon_ui nodes: %s" % [weapon_ui_nodes.size(), weapon_ui_nodes])
+	
+	for node in weapon_ui_nodes:
+		_log_debug("Checking WeaponUI node: %s" % node)
+		if node.has_method("get_weapon_system"):
+			_log_debug("WeaponUI node has get_weapon_system method, calling it...")
+			var weapon_system = node.get_weapon_system()
+			_log_debug("WeaponUI.get_weapon_system() returned: %s" % weapon_system)
+			if weapon_system:
+				_log_debug("✓ WeaponSystem obtained from WeaponUI group successfully!")
+				return weapon_system
+		else:
+			_log_debug("WeaponUI node does not have get_weapon_system method")
+	
+	# Method 3: パス経由でWeaponUIを直接取得
+	_log_debug("Method 3: Trying direct path to WeaponUI...")
+	if main_scene:
+		var weapon_ui_path = "UIArea/TabSystem/ContentArea/WeaponContent/WeaponUI"
+		var weapon_ui = main_scene.get_node_or_null(weapon_ui_path)
+		_log_debug("WeaponUI via path '%s': %s" % [weapon_ui_path, weapon_ui])
+		
+		if weapon_ui and weapon_ui.has_method("get_weapon_system"):
+			_log_debug("WeaponUI found via path, getting weapon system...")
+			var weapon_system = weapon_ui.get_weapon_system()
+			_log_debug("WeaponUI path method returned: %s" % weapon_system)
+			if weapon_system:
+				_log_debug("✓ WeaponSystem obtained via path successfully!")
+				return weapon_system
+	
+	# Method 4: 親ノードを辿ってMainSceneを探す
+	_log_debug("Method 4: Traversing parent nodes to find MainScene...")
+	var current_node = self
+	while current_node:
+		_log_debug("Checking node: %s (type: %s)" % [current_node, current_node.get_class()])
+		if current_node.has_method("get_weapon_system"):
+			_log_debug("Found node with get_weapon_system method!")
+			var weapon_system = current_node.get_weapon_system()
+			if weapon_system:
+				_log_debug("✓ WeaponSystem obtained via parent traversal!")
+				return weapon_system
+		current_node = current_node.get_parent()
+	
+	_log_error("❌ Failed to obtain WeaponSystem from any source!")
+	return null
+
+## フォールバック武器設定
+func _fallback_weapon_setup() -> void:
+	"""WeaponSystemが利用できない場合のフォールバック武器設定"""
+	if not weapon_sprite:
+		return
+	
+	# デフォルトの剣テクスチャを使用
+	var default_weapon_path = "res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0103.png"
+	var weapon_texture = _load_texture_safe(default_weapon_path)
+	if weapon_texture:
+		weapon_sprite.texture = weapon_texture
+		weapon_sprite.scale = Vector2(GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_SCALE)
+		weapon_sprite.flip_h = true
+		
+		# 剣の柄（画像の中央下）をプレイヤーの腰の位置に固定
+		var texture_size = weapon_texture.get_size()
+		
+		# 剣の柄の中央部分が回転中心となるよう設定
+		weapon_sprite.position = GameConstants.PLAYER_WEAPON_OFFSET
+		weapon_sprite.offset = Vector2(-texture_size.x * 0.2, -texture_size.y * 0.5)
+		
+		# 剣を敵よりも手前に表示するためz_indexを設定
+		weapon_sprite.z_index = 10
+		
+		weapon_sprite.rotation_degrees = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
+		weapon_initial_rotation = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
+		
+		# フォールバック時はデフォルトの白色
+		weapon_sprite.modulate = Color.WHITE
+		
+		# フォールバック時の攻撃力はPlayerStatsから取得
+		attack_damage = PlayerStats.get_attack_damage()
+		
+		_log_debug("Fallback weapon setup completed: damage=%d, sprite=%s, color=WHITE" % [attack_damage, default_weapon_path])
+	else:
+		_log_error("Failed to load fallback weapon sprite: %s" % default_weapon_path)
 
 ## HPシステムの初期設定
 func _setup_hp_system() -> void:
@@ -221,6 +390,57 @@ func collect_coin(coin_value: int) -> void:
 func get_total_coins() -> int:
 	return total_coins
 
+## 武器データを更新
+func refresh_weapon_data() -> void:
+	"""WeaponSystemから武器データを再取得して更新"""
+	_log_debug("🔄 refresh_weapon_data() called for GreenCharacter")
+	_update_weapon_from_system()
+	_log_debug("GreenCharacter weapon data refreshed")
+
+## 強制的に武器スプライトを更新
+func force_update_weapon_sprite(weapon_sprite_path: String) -> void:
+	"""外部から直接武器スプライトを更新（デバッグ・緊急用）"""
+	_log_debug("🚀 force_update_weapon_sprite() called with path: %s" % weapon_sprite_path)
+	
+	if not weapon_sprite:
+		_log_error("weapon_sprite node is null! Cannot force update.")
+		return
+	
+	if weapon_sprite_path == "":
+		_log_error("Empty weapon sprite path provided!")
+		return
+	
+	var weapon_texture = _load_texture_safe(weapon_sprite_path)
+	if weapon_texture:
+		_log_debug("Force updating weapon sprite texture...")
+		weapon_sprite.texture = weapon_texture
+		weapon_sprite.scale = Vector2(GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_SCALE)
+		weapon_sprite.flip_h = true
+		
+		var texture_size = weapon_texture.get_size()
+		weapon_sprite.position = GameConstants.PLAYER_WEAPON_OFFSET
+		weapon_sprite.offset = Vector2(-texture_size.x * 0.2, -texture_size.y * 0.5)
+		weapon_sprite.z_index = 10
+		weapon_sprite.rotation_degrees = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
+		weapon_initial_rotation = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
+		
+		# 現在の武器データからレアリティ色を適用
+		var weapon_system = _get_weapon_system()
+		if weapon_system:
+			var weapon_data = weapon_system.get_character_weapon("green")
+			if weapon_data:
+				var rarity_color = weapon_system.get_rarity_color(weapon_data.rarity)
+				weapon_sprite.modulate = rarity_color
+				_log_debug("Applied rarity color in force update: %s for rarity: %s" % [rarity_color, weapon_data.rarity])
+			else:
+				weapon_sprite.modulate = Color.WHITE
+		else:
+			weapon_sprite.modulate = Color.WHITE
+		
+		_log_debug("✅ Weapon sprite force updated successfully!")
+	else:
+		_log_error("Failed to load weapon texture for force update: %s" % weapon_sprite_path)
+
 ## PlayerStatsからステータスを更新
 func update_stats_from_player_stats() -> void:
 	"""PlayerStatsシングルトンから最新のGreenCharacter (みどりくん) ステータスを取得して更新"""
@@ -230,8 +450,11 @@ func update_stats_from_player_stats() -> void:
 	if current_hp > max_hp:
 		current_hp = max_hp
 	
-	# 攻撃力を更新
+	# 攻撃力を更新（WeaponSystemから取得）
 	attack_damage = PlayerStats.get_attack_damage()
+	
+	# 武器データを更新
+	refresh_weapon_data()
 	
 	# コイン数を同期
 	total_coins = PlayerStats.total_coins

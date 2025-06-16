@@ -101,10 +101,31 @@ func _setup_walk_animation() -> void:
 
 ## 武器（杖）の初期設定
 func _setup_weapon() -> void:
-	"""杖スプライトの初期設定"""
-	if weapon_sprite:
-		# 杖テクスチャを読み込み
-		var weapon_texture = _load_texture_safe("res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0130.png")
+	"""杖スプライトの初期設定（WeaponSystemから取得）"""
+	_update_weapon_from_system()
+
+## WeaponSystemから武器を更新
+func _update_weapon_from_system() -> void:
+	"""WeaponSystemから現在の武器データを取得して反映"""
+	var weapon_system = _get_weapon_system()
+	if not weapon_system:
+		_fallback_weapon_setup()
+		return
+	
+	var weapon_sprite_path = weapon_system.get_weapon_sprite_path("red")
+	var weapon_damage_value = weapon_system.get_weapon_damage("red")
+	var weapon_range_value = weapon_system.get_weapon_attack_range("red")
+	
+	# 武器の完全なデータを取得（レアリティ情報のため）
+	var weapon_data = weapon_system.get_character_weapon("red")
+	
+	# 攻撃力と射程を更新
+	attack_damage = weapon_damage_value
+	attack_range = weapon_range_value
+	
+	# 武器スプライト更新
+	if weapon_sprite and weapon_sprite_path != "":
+		var weapon_texture = _load_texture_safe(weapon_sprite_path)
 		if weapon_texture:
 			weapon_sprite.texture = weapon_texture
 			weapon_sprite.scale = Vector2(GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_SCALE)
@@ -122,11 +143,78 @@ func _setup_weapon() -> void:
 			
 			weapon_sprite.rotation_degrees = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
 			weapon_initial_rotation = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
-			_log_debug("Staff initialized: scale=%f, position=%s, rotation=%f, offset=%s, z_index=%d" % [GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_OFFSET, weapon_initial_rotation, weapon_sprite.offset, weapon_sprite.z_index])
+			
+			# レアリティ色を適用
+			if weapon_data and weapon_system:
+				var rarity_color = weapon_system.get_rarity_color(weapon_data.rarity)
+				weapon_sprite.modulate = rarity_color
+				_log_debug("Applied rarity color: %s for rarity: %s" % [rarity_color, weapon_data.rarity])
+			else:
+				weapon_sprite.modulate = Color.WHITE
+				_log_debug("No rarity data available, using default white color")
+			
+			_log_debug("Staff from WeaponSystem: damage=%d, range=%.1f, sprite=%s" % [weapon_damage_value, weapon_range_value, weapon_sprite_path])
+			_log_debug("Staff initialized: scale=%f, position=%s, rotation=%f, offset=%s, z_index=%d, color=%s" % [GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_OFFSET, weapon_initial_rotation, weapon_sprite.offset, weapon_sprite.z_index, weapon_sprite.modulate])
 		else:
-			_log_error("Failed to load staff sprite")
+			_log_error("Failed to load staff sprite from WeaponSystem: %s" % weapon_sprite_path)
+			_fallback_weapon_setup()
 	else:
-		_log_error("Weapon sprite node not found")
+		_log_debug("No staff sprite path from WeaponSystem, using fallback")
+		_fallback_weapon_setup()
+
+## WeaponSystem取得ヘルパー
+func _get_weapon_system() -> WeaponSystem:
+	"""WeaponSystemインスタンスを取得"""
+	# MainSceneのget_weapon_system()メソッドを使用
+	var main_scene = get_tree().current_scene
+	if main_scene and main_scene.has_method("get_weapon_system"):
+		return main_scene.get_weapon_system()
+	
+	# 直接WeaponUIを探す
+	var weapon_ui_nodes = get_tree().get_nodes_in_group("weapon_ui")
+	for node in weapon_ui_nodes:
+		if node.has_method("get_weapon_system"):
+			return node.get_weapon_system()
+	
+	return null
+
+## フォールバック武器設定
+func _fallback_weapon_setup() -> void:
+	"""WeaponSystemが利用できない場合のフォールバック武器設定"""
+	if not weapon_sprite:
+		return
+	
+	# デフォルトの杖テクスチャを使用
+	var default_weapon_path = "res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0130.png"
+	var weapon_texture = _load_texture_safe(default_weapon_path)
+	if weapon_texture:
+		weapon_sprite.texture = weapon_texture
+		weapon_sprite.scale = Vector2(GameConstants.PLAYER_WEAPON_SCALE, GameConstants.PLAYER_WEAPON_SCALE)
+		weapon_sprite.flip_h = false  # 杖は反転しない
+		
+		# 杖の中央部分をプレイヤーの手の位置に固定
+		var texture_size = weapon_texture.get_size()
+		
+		# 杖の持ち手部分が回転中心となるよう設定
+		weapon_sprite.position = GameConstants.PLAYER_WEAPON_OFFSET
+		weapon_sprite.offset = Vector2(-texture_size.x * 0.5, -texture_size.y * 0.7)
+		
+		# 杖を敵よりも手前に表示するためz_indexを設定
+		weapon_sprite.z_index = 10
+		
+		weapon_sprite.rotation_degrees = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
+		weapon_initial_rotation = GameConstants.PLAYER_WEAPON_INITIAL_ROTATION
+		
+		# フォールバック時はデフォルトの白色
+		weapon_sprite.modulate = Color.WHITE
+		
+		# フォールバック時の攻撃力・射程はPlayerStatsから取得
+		attack_damage = PlayerStats.get_red_character_attack_damage()
+		attack_range = PlayerStats.get_red_character_attack_range()
+		
+		_log_debug("Fallback staff setup completed: damage=%d, range=%.1f, sprite=%s, color=WHITE" % [attack_damage, attack_range, default_weapon_path])
+	else:
+		_log_error("Failed to load fallback staff sprite: %s" % default_weapon_path)
 
 ## HPシステムの初期設定
 func _setup_hp_system() -> void:
@@ -346,6 +434,12 @@ func collect_coin(coin_value: int) -> void:
 func get_total_coins() -> int:
 	return total_coins
 
+## 武器データを更新
+func refresh_weapon_data() -> void:
+	"""WeaponSystemから武器データを再取得して更新"""
+	_update_weapon_from_system()
+	_log_debug("RedCharacter weapon data refreshed")
+
 ## PlayerStatsからステータスを更新
 func update_stats_from_player_stats() -> void:
 	"""PlayerStatsシングルトンから最新のステータスを取得して更新"""
@@ -358,11 +452,14 @@ func update_stats_from_player_stats() -> void:
 	if current_hp > max_hp:
 		current_hp = max_hp
 	
-	# 攻撃力を更新
+	# 攻撃力を更新（WeaponSystemから取得）
 	attack_damage = PlayerStats.get_red_character_attack_damage()
 	
-	# 攻撃範囲を更新
+	# 攻撃範囲を更新（WeaponSystemから取得）
 	attack_range = PlayerStats.get_red_character_attack_range()
+	
+	# 武器データを更新
+	refresh_weapon_data()
 	
 	# コイン数を同期
 	total_coins = PlayerStats.total_coins

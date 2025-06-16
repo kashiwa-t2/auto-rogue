@@ -29,19 +29,26 @@ class WeaponData:
 	var rarity: WeaponRarity
 	var level: int = 1
 	var base_damage: int
+	var attack_range: float = 80.0
 	var special_effect: String = ""
 	var icon_path: String
+	var sprite_path: String
 	
-	func _init(weapon_id: String, weapon_name: String, type: WeaponType, weapon_rarity: WeaponRarity, damage: int, icon: String):
+	func _init(weapon_id: String, weapon_name: String, type: WeaponType, weapon_rarity: WeaponRarity, damage: int, range: float, icon: String, sprite: String = ""):
 		id = weapon_id
 		name = weapon_name
 		weapon_type = type
 		rarity = weapon_rarity
 		base_damage = damage
+		attack_range = range
 		icon_path = icon
+		sprite_path = sprite if sprite != "" else icon
 	
 	func get_damage_at_level() -> int:
 		return base_damage + (level - 1) * 5
+	
+	func get_attack_range() -> float:
+		return attack_range
 	
 	func get_upgrade_cost() -> int:
 		return level * 50
@@ -58,63 +65,103 @@ signal weapon_equipped(character_name: String, weapon: WeaponData)
 signal weapon_upgraded(character_name: String, weapon: WeaponData)
 
 func _ready():
+	_log_debug("🏁 WeaponSystem._ready() started")
 	_initialize_weapon_database()
 	_setup_default_weapons()
+	_log_debug("✅ WeaponSystem._ready() completed")
 
 ## 武器データベース初期化
 func _initialize_weapon_database() -> void:
+	_log_debug("🗃️ Initializing weapon database...")
+	
 	# みどりくん用剣
 	weapon_database["basic_sword"] = WeaponData.new(
-		"basic_sword", "ベーシックソード", WeaponType.SWORD, WeaponRarity.COMMON, 10,
-		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0103.png"
+		"basic_sword", "ベーシックソード", WeaponType.SWORD, WeaponRarity.COMMON, 10, 80.0,
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0103.png",
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0103.png"  # プレイエリア用のスプライト
 	)
 	
 	weapon_database["steel_sword"] = WeaponData.new(
-		"steel_sword", "スチールソード", WeaponType.SWORD, WeaponRarity.RARE, 15,
-		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0103.png"
+		"steel_sword", "スチールソード", WeaponType.SWORD, WeaponRarity.RARE, 15, 85.0,
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0104.png",  # 異なるアイコン
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0104.png"  # プレイエリア用の異なるスプライト
+	)
+	
+	weapon_database["fire_sword"] = WeaponData.new(
+		"fire_sword", "ファイアソード", WeaponType.SWORD, WeaponRarity.EPIC, 20, 90.0,
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0105.png",  # さらに異なるアイコン
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0105.png"  # プレイエリア用のスプライト
 	)
 	
 	# あかさん用杖
 	weapon_database["basic_staff"] = WeaponData.new(
-		"basic_staff", "ベーシックスタッフ", WeaponType.STAFF, WeaponRarity.COMMON, 8,
-		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0130.png"
+		"basic_staff", "ベーシックスタッフ", WeaponType.STAFF, WeaponRarity.COMMON, 8, 280.0,
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0130.png",
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0130.png"  # プレイエリア用のスプライト
 	)
 	
 	weapon_database["magic_staff"] = WeaponData.new(
-		"magic_staff", "マジックスタッフ", WeaponType.STAFF, WeaponRarity.RARE, 12,
-		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0130.png"
+		"magic_staff", "マジックスタッフ", WeaponType.STAFF, WeaponRarity.RARE, 12, 320.0,
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0131.png",  # 異なるアイコン
+		"res://assets/sprites/kenney_tiny-dungeon/Tiles/tile_0131.png"  # プレイエリア用の異なるスプライト
 	)
+	
+	_log_debug("✅ Weapon database initialized with %d weapons:" % weapon_database.size())
+	for weapon_id in weapon_database:
+		var weapon = weapon_database[weapon_id]
+		_log_debug("  - %s: %s (Level %d, Type: %s, Rarity: %s)" % [weapon_id, weapon.name, weapon.level, WeaponType.keys()[weapon.weapon_type], WeaponRarity.keys()[weapon.rarity]])
 
 ## デフォルト武器装備
 func _setup_default_weapons() -> void:
 	green_character_weapon = weapon_database["basic_sword"]
 	red_character_weapon = weapon_database["basic_staff"]
+	
+	_log_debug("🗡️ Default weapons equipped:")
+	_log_debug("  - Green: %s Level %d" % [green_character_weapon.name, green_character_weapon.level])
+	_log_debug("  - Red: %s Level %d" % [red_character_weapon.name, red_character_weapon.level])
 
 ## 武器装備
 func equip_weapon(character_name: String, weapon_id: String) -> bool:
+	_log_debug("🔄 Attempting to equip weapon: %s to %s" % [weapon_id, character_name])
+	
 	if not weapon_database.has(weapon_id):
+		_log_debug("❌ Weapon not found in database: %s" % weapon_id)
 		print("[WeaponSystem] ERROR: Weapon not found: %s" % weapon_id)
 		return false
 	
 	var weapon = weapon_database[weapon_id]
+	_log_debug("🗡️ Found weapon: %s (%s) Level %d, Type: %s" % [weapon.id, weapon.name, weapon.level, WeaponType.keys()[weapon.weapon_type]])
 	
 	match character_name:
 		"green":
 			if weapon.weapon_type == WeaponType.SWORD:
+				var old_weapon = green_character_weapon
 				green_character_weapon = weapon
+				_log_debug("✅ Equipped %s to green character (was: %s)" % [weapon.name, old_weapon.name if old_weapon else "none"])
+				_log_debug("🎯 Green weapon change: %s Level %d → %s Level %d" % [old_weapon.name if old_weapon else "none", old_weapon.level if old_weapon else 0, weapon.name, weapon.level])
 				weapon_equipped.emit(character_name, weapon)
 				return true
+			else:
+				_log_debug("❌ Invalid weapon type for green character: %s (expected SWORD)" % WeaponType.keys()[weapon.weapon_type])
 		"red":
 			if weapon.weapon_type == WeaponType.STAFF:
+				var old_weapon = red_character_weapon
 				red_character_weapon = weapon
+				_log_debug("✅ Equipped %s to red character (was: %s)" % [weapon.name, old_weapon.name if old_weapon else "none"])
+				_log_debug("🎯 Red weapon change: %s Level %d → %s Level %d" % [old_weapon.name if old_weapon else "none", old_weapon.level if old_weapon else 0, weapon.name, weapon.level])
 				weapon_equipped.emit(character_name, weapon)
 				return true
+			else:
+				_log_debug("❌ Invalid weapon type for red character: %s (expected STAFF)" % WeaponType.keys()[weapon.weapon_type])
 	
+	_log_debug("❌ Weapon equip failed for %s: %s" % [character_name, weapon_id])
 	print("[WeaponSystem] ERROR: Invalid weapon type for character: %s" % character_name)
 	return false
 
 ## 武器強化
 func upgrade_weapon(character_name: String) -> bool:
+	_log_debug("🔼 Attempting weapon upgrade for character: %s" % character_name)
+	
 	var weapon: WeaponData = null
 	
 	match character_name:
@@ -124,15 +171,33 @@ func upgrade_weapon(character_name: String) -> bool:
 			weapon = red_character_weapon
 	
 	if not weapon:
+		_log_debug("❌ No weapon found for character: %s" % character_name)
 		return false
 	
 	var cost = weapon.get_upgrade_cost()
+	var current_coins = PlayerStats.total_coins
+	_log_debug("💰 Current coins: %d, Upgrade cost: %d, Weapon: %s (Level %d)" % [current_coins, cost, weapon.name, weapon.level])
+	
 	if PlayerStats.total_coins >= cost:
+		var old_level = weapon.level
 		PlayerStats.total_coins -= cost
 		weapon.level += 1
+		
+		_log_debug("⬆️ Weapon upgraded: %s Level %d → %d" % [weapon.name, old_level, weapon.level])
+		
+		# PlayerStatsに武器レベル変更を通知
+		_update_player_stats_weapon_level(weapon.id, weapon.level)
+		
+		# 武器アップグレード成功時に即座セーブ
+		_log_debug("💾 Saving weapon upgrade...")
+		SaveManager.save_game()
+		_log_debug("✅ Weapon upgrade saved: %s Level %d" % [weapon.name, weapon.level])
+		
 		weapon_upgraded.emit(character_name, weapon)
-		print("[WeaponSystem] Weapon upgraded: %s Level %d" % [weapon.name, weapon.level])
+		print("[WeaponSystem] ✅ Weapon upgraded: %s Level %d" % [weapon.name, weapon.level])
 		return true
+	else:
+		_log_debug("❌ Insufficient coins for upgrade: %d < %d" % [current_coins, cost])
 	
 	return false
 
@@ -152,6 +217,20 @@ func get_weapon_damage(character_name: String) -> int:
 	if weapon:
 		return weapon.get_damage_at_level()
 	return 0
+
+## 武器攻撃範囲取得
+func get_weapon_attack_range(character_name: String) -> float:
+	var weapon = get_character_weapon(character_name)
+	if weapon:
+		return weapon.get_attack_range()
+	return 80.0  # デフォルト値
+
+## 武器スプライトパス取得
+func get_weapon_sprite_path(character_name: String) -> String:
+	var weapon = get_character_weapon(character_name)
+	if weapon:
+		return weapon.sprite_path
+	return ""
 
 ## 利用可能武器リスト取得
 func get_available_weapons(character_name: String) -> Array[WeaponData]:
@@ -186,6 +265,96 @@ func get_rarity_color(rarity: WeaponRarity) -> Color:
 			return Color.GOLD
 		_:
 			return Color.WHITE
+
+## PlayerStatsに武器レベル変更を通知
+func _update_player_stats_weapon_level(weapon_id: String, new_level: int) -> void:
+	"""WeaponSystemで武器レベルが変更された時にPlayerStatsに反映"""
+	if PlayerStats.has_method("update_weapon_system_level"):
+		PlayerStats.update_weapon_system_level(weapon_id, new_level)
+		_log_debug("Notified PlayerStats of weapon level change: %s -> %d" % [weapon_id, new_level])
+	else:
+		_log_debug("PlayerStats does not have update_weapon_system_level method")
+
+## テスト用：全武器レベルを上げる
+func _debug_level_up_all_weapons() -> void:
+	"""デバッグ用：全武器のレベルを上げる"""
+	_log_debug("🧪 DEBUG: Leveling up all weapons for testing...")
+	
+	for weapon_id in weapon_database:
+		var weapon = weapon_database[weapon_id]
+		var old_level = weapon.level
+		weapon.level += 1
+		_log_debug("⬆️ DEBUG: %s (%s) Level %d → %d" % [weapon_id, weapon.name, old_level, weapon.level])
+	
+	_log_debug("✅ DEBUG: All weapons leveled up")
+
+## テスト用：武器レベル表示
+func _debug_show_all_weapon_levels() -> void:
+	"""デバッグ用：全武器のレベルを表示"""
+	_log_debug("📊 DEBUG: Current weapon levels:")
+	for weapon_id in weapon_database:
+		var weapon = weapon_database[weapon_id]
+		var equipped_status = ""
+		if green_character_weapon and green_character_weapon.id == weapon_id:
+			equipped_status = " [EQUIPPED-GREEN]"
+		elif red_character_weapon and red_character_weapon.id == weapon_id:
+			equipped_status = " [EQUIPPED-RED]"
+		_log_debug("  - %s (%s): Level %d%s" % [weapon_id, weapon.name, weapon.level, equipped_status])
+
+## テスト用：全武器を装備してアップグレード
+func _debug_test_all_weapons() -> void:
+	"""デバッグ用：全武器を順番に装備してアップグレードテスト"""
+	_log_debug("🧪 DEBUG: Testing all weapon equip and upgrade...")
+	
+	# Green character weapons test
+	var green_weapons = get_available_weapons("green")
+	_log_debug("🟢 Testing %d green weapons:" % green_weapons.size())
+	for weapon in green_weapons:
+		_log_debug("  🔄 Testing weapon: %s (Level %d)" % [weapon.id, weapon.level])
+		
+		# Equip weapon
+		var equip_result = equip_weapon("green", weapon.id)
+		_log_debug("    Equip result: %s" % equip_result)
+		
+		# Check current equipped weapon
+		var current_weapon = get_character_weapon("green")
+		if current_weapon:
+			_log_debug("    Currently equipped: %s (Level %d)" % [current_weapon.id, current_weapon.level])
+		
+		# Upgrade weapon multiple times
+		for i in range(3):
+			var old_level = current_weapon.level if current_weapon else 0
+			PlayerStats.total_coins += 1000  # Ensure enough coins
+			var upgrade_result = upgrade_weapon("green")
+			var new_level = current_weapon.level if current_weapon else 0
+			_log_debug("    Upgrade %d: %s (Level %d → %d)" % [i+1, upgrade_result, old_level, new_level])
+	
+	# Red character weapons test (if unlocked)
+	if PlayerStats.red_character_unlocked:
+		var red_weapons = get_available_weapons("red")
+		_log_debug("🔴 Testing %d red weapons:" % red_weapons.size())
+		for weapon in red_weapons:
+			_log_debug("  🔄 Testing weapon: %s (Level %d)" % [weapon.id, weapon.level])
+			
+			# Equip weapon
+			var equip_result = equip_weapon("red", weapon.id)
+			_log_debug("    Equip result: %s" % equip_result)
+			
+			# Check current equipped weapon
+			var current_weapon = get_character_weapon("red")
+			if current_weapon:
+				_log_debug("    Currently equipped: %s (Level %d)" % [current_weapon.id, current_weapon.level])
+			
+			# Upgrade weapon multiple times
+			for i in range(3):
+				var old_level = current_weapon.level if current_weapon else 0
+				PlayerStats.total_coins += 1000  # Ensure enough coins
+				var upgrade_result = upgrade_weapon("red")
+				var new_level = current_weapon.level if current_weapon else 0
+				_log_debug("    Upgrade %d: %s (Level %d → %d)" % [i+1, upgrade_result, old_level, new_level])
+	
+	_log_debug("🧪 DEBUG: All weapons test completed")
+	_debug_show_all_weapon_levels()
 
 ## デバッグログ
 func _log_debug(message: String) -> void:
